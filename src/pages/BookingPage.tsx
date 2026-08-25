@@ -53,7 +53,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
 
   const handleBook = async () => {
     if (!isEmergency && !selSlot) { setMsg('Please select a time slot.'); return; }
-    setLoading(true); setMsg('');
+    setLoading(true); setMsg(''); console.log('booking v4');
     try {
       await api.post('/appointments', {
         doctor_id:      doctorId,
@@ -249,4 +249,5 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
     </div>
   );
 }
+
 
