@@ -55,7 +55,7 @@ export default function DoctorSearch({ initial, onBook }: { initial?: { specialt
             background: specialty === s.id ? 'var(--primary)' : '#fff',
             color: specialty === s.id ? '#fff' : 'var(--text-secondary)',
             fontSize: 13, fontWeight: specialty === s.id ? 600 : 400,
-            cursor: 'pointer', border: `1px solid ${specialty === s.id ? 'var(--primary)' : 'var(--border)'}`,
+            cursor: 'pointer',
           }}>{s.label}</button>
         ))}
       </div>
@@ -138,4 +138,3 @@ export default function DoctorSearch({ initial, onBook }: { initial?: { specialt
     </div>
   );
 }
-
