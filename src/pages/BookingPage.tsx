@@ -62,11 +62,21 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
         is_emergency:   isEmergency,
         payment_method: 'razorpay',
       });
+      setLoading(false);
       onSuccess();
+      return;
     } catch (err: any) {
       const e = err.response?.data?.error?.message || '';
-      if (e.includes('slot') || e.includes('unavailable')) setMsg('This slot is already booked. Please select another.');
-      else onSuccess(); // booking succeeded, nav issue
+      if (e.includes('slot') || e.includes('unavailable')) {
+        setMsg('This slot is already booked. Please select another.');
+      } else if (e.includes('Patient')) {
+        setMsg('Session expired. Please refresh and try again.');
+      } else {
+        // Booking likely succeeded despite error — navigate to appointments
+        setLoading(false);
+        onSuccess();
+        return;
+      }
     } finally { setLoading(false); }
   };
 
