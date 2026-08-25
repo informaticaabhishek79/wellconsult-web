@@ -138,3 +138,4 @@ export default function DoctorSearch({ initial, onBook }: { initial?: { specialt
     </div>
   );
 }
+
