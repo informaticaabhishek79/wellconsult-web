@@ -12,6 +12,7 @@ const NAV_PATIENT = [
 const NAV_DOCTOR = [
   { icon:'📊', label:'Dashboard',    path:'/dashboard' },
   { icon:'📅', label:'Appointments', path:'/appointments' },
+  { icon:'💬', label:'Patient Q&A',  path:'/questions' },
   { icon:'👥', label:'Patients',     path:'/patients' },
   { icon:'👤', label:'Profile',      path:'/profile' },
 ];

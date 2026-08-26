@@ -9,6 +9,7 @@ import BookingPage from './pages/BookingPage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorOnboarding from './pages/DoctorOnboarding';
+import DoctorQuestionsPage from './pages/DoctorQuestionsPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import AskDoctorPage from './pages/AskDoctorPage';
