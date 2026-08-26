@@ -40,6 +40,7 @@ function AppContent() {
 
   const [nav, setNav] = useState<NavState>({ path: getInitialPath() });
   const [bookingDoctorId, setBookingDoctorId] = useState<string | null>(getInitialDoctorId());
+  const [chatAppointment, setChatAppointment] = useState<{id:string;doctorName?:string} | null>(null);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
