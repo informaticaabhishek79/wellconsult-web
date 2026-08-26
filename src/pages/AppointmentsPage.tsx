@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
 
 const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
@@ -13,9 +13,8 @@ const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
 
 export default function AppointmentsPage({ onBook }: { onBook: () => void }) {
   const [tab, setTab] = useState<'upcoming'|'past'>('upcoming');
-  const qc = useQueryClient();
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['my-appointments'],
     queryFn: async () => {
       const { data } = await api.get('/patients/me/appointments');
@@ -29,19 +28,29 @@ export default function AppointmentsPage({ onBook }: { onBook: () => void }) {
   const list     = tab === 'upcoming' ? upcoming : past;
 
   const handleCancel = async (appt: any) => {
-    if (!window.confirm(`Cancel your ${appt.consult_type} consultation with ${appt.doctor_name} on ${appt.appt_date?.slice(0,10)}?\n\nRefund processed in 3–5 business days.`)) return;
+    if (!window.confirm(`Cancel your ${appt.consult_type} consultation with ${appt.doctor_name} on ${appt.appt_date?.slice(0,10)}?\n\nRefund processed in 3-5 business days.`)) return;
     try {
       await api.patch(`/appointments/${appt.id}/cancel`, { reason: 'Cancelled by patient' });
-      await refetch();
       window.location.reload();
     } catch (err: any) {
       alert(err.response?.data?.error?.message || 'Could not cancel. Please try again.');
     }
   };
 
+  const handleReschedule = async (appt: any) => {
+    if (!window.confirm(`This will cancel your appointment with ${appt.doctor_name} on ${appt.appt_date?.slice(0,10)} and let you book a new slot.\n\nContinue?`)) return;
+    try {
+      await api.patch(`/appointments/${appt.id}/cancel`, { reason: 'Rescheduled by patient' });
+      // Store doctor_id and navigate to booking
+      sessionStorage.setItem('reschedule_doctor_id', appt.doctor_id);
+      window.location.href = window.location.origin + '?page=doctors&reschedule=1';
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Could not reschedule. Please try again.');
+    }
+  };
+
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '28px 24px' }}>
-      {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
         <h1 style={{ fontFamily:'var(--font-display)', fontSize:28, fontWeight:700, color:'var(--text-primary)' }}>My Appointments</h1>
         <button onClick={onBook} style={{ padding:'9px 18px', borderRadius:'var(--r-md)', background:'var(--primary)', color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>
@@ -65,17 +74,14 @@ export default function AppointmentsPage({ onBook }: { onBook: () => void }) {
           <button key={t} onClick={() => setTab(t)} style={{
             padding:'10px 20px', border:'none', background:'none',
             borderBottom: tab===t ? '2px solid var(--primary)' : '2px solid transparent',
-            marginBottom:-2, fontSize:14,
-            fontWeight: tab===t ? 700 : 500,
-            color: tab===t ? 'var(--primary)' : 'var(--text-secondary)',
-            cursor:'pointer',
+            marginBottom:-2, fontSize:14, fontWeight: tab===t ? 700 : 500,
+            color: tab===t ? 'var(--primary)' : 'var(--text-secondary)', cursor:'pointer',
           }}>
             {t === 'upcoming' ? `Upcoming (${upcoming.length})` : `Past (${past.length})`}
           </button>
         ))}
       </div>
 
-      {/* List */}
       {isLoading ? (
         <div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Loading...</div>
       ) : list.length === 0 ? (
@@ -104,8 +110,7 @@ export default function AppointmentsPage({ onBook }: { onBook: () => void }) {
             return (
               <div key={item.id} style={{ background:'#fff', borderRadius:'var(--r-lg)', border:'1px solid var(--border)', overflow:'hidden', boxShadow:'var(--shadow-sm)' }}>
                 <div style={{ display:'flex', alignItems:'stretch' }}>
-                  {/* Color accent */}
-                  <div style={{ width:4, background: canCancel ? 'var(--primary)' : item.status==='cancelled' ? 'var(--error)' : 'var(--success)', flexShrink:0 }}/>
+                  <div style={{ width:4, background: canCancel ? 'var(--primary)' : item.status==='cancelled' ? 'var(--error)' : '#16A34A', flexShrink:0 }}/>
                   <div style={{ flex:1, padding:'14px 16px' }}>
                     <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -124,19 +129,15 @@ export default function AppointmentsPage({ onBook }: { onBook: () => void }) {
                       </div>
                     </div>
 
-                    <div style={{ display:'flex', gap:16, marginBottom:isUpcoming && (canCancel||canReschedule) ? 12 : 0, flexWrap:'wrap' }}>
-                      <span style={{ fontSize:13, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:4 }}>
-                        📅 {item.appt_date?.slice(0,10)}
-                      </span>
-                      <span style={{ fontSize:13, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:4 }}>
-                        🕐 {item.appt_time?.slice(0,5)}
-                      </span>
-                      <span style={{ fontSize:13, color:'var(--text-secondary)', textTransform:'capitalize', display:'flex', alignItems:'center', gap:4 }}>
+                    <div style={{ display:'flex', gap:16, marginBottom: isUpcoming ? 12 : 0, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:13, color:'var(--text-secondary)' }}>📅 {item.appt_date?.slice(0,10)}</span>
+                      <span style={{ fontSize:13, color:'var(--text-secondary)' }}>🕐 {item.appt_time?.slice(0,5)}</span>
+                      <span style={{ fontSize:13, color:'var(--text-secondary)', textTransform:'capitalize' }}>
                         {item.consult_type==='video'?'📹':item.consult_type==='phone'?'📞':'🏥'} {item.consult_type}
                       </span>
                     </div>
 
-                    {isUpcoming && (canCancel || canReschedule || item.status==='confirmed') && (
+                    {isUpcoming && (
                       <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                         {item.status === 'confirmed' && (
                           <button style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'var(--primary)', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
@@ -144,12 +145,12 @@ export default function AppointmentsPage({ onBook }: { onBook: () => void }) {
                           </button>
                         )}
                         {canReschedule && (
-                          <button onClick={() => { if(window.confirm('Cancel current appointment and rebook?')) handleCancel(item).then(() => onBook()); }} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--primary)', background:'var(--primary-light)', color:'var(--primary)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                          <button onClick={() => handleReschedule(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--primary)', background:'var(--primary-light)', color:'var(--primary)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                             📅 Reschedule
                           </button>
                         )}
                         {canCancel && (
-                          <button onClick={() => handleCancel(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--error)', background:'var(--error-light)', color:'var(--error)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                          <button onClick={() => handleCancel(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', border:'1.5px solid #DC2626', background:'#FEF2F2', color:'#DC2626', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                             ✕ Cancel
                           </button>
                         )}

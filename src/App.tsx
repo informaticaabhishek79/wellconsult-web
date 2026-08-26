@@ -24,12 +24,28 @@ function AppContent() {
     return user?.role === 'doctor' ? '/dashboard' : user?.role === 'admin' ? '/admin' : '/home';
   };
 
+  const getInitialDoctorId = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('reschedule') === '1') {
+      return sessionStorage.getItem('reschedule_doctor_id') || null;
+    }
+    return null;
+  };
+
   const [nav, setNav] = useState<NavState>({ path: getInitialPath() });
-  const [bookingDoctorId, setBookingDoctorId] = useState<string | null>(null);
+  const [bookingDoctorId, setBookingDoctorId] = useState<string | null>(getInitialDoctorId());
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const page = urlParams.get('page');
+    const reschedule = urlParams.get('reschedule');
+    if (reschedule === '1') {
+      const doctorId = sessionStorage.getItem('reschedule_doctor_id');
+      sessionStorage.removeItem('reschedule_doctor_id');
+      if (doctorId) setBookingDoctorId(doctorId);
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
     if (page) {
       setNav({ path: '/' + page });
       window.history.replaceState({}, '', window.location.pathname);
