@@ -110,6 +110,7 @@ function AppContent() {
       switch (path) {
         case '/dashboard':    return <DoctorDashboard onNav={onNav} />;
         case '/appointments': return <AppointmentsPage onBook={() => onNav('/doctors')} />;
+        case '/questions':    return <DoctorQuestionsPage />;
         case '/profile':      return <ProfilePage />;
         default:              return <DoctorDashboard onNav={onNav} />;
       }
