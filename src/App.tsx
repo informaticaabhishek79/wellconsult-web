@@ -56,24 +56,27 @@ function AppContent() {
     if (user) setNav({ path: user.role === 'doctor' ? '/dashboard' : user.role === 'admin' ? '/admin' : '/home' });
   }, [user?.role]);
 
-  // Check if doctor needs onboarding - must be before any early return (hooks rules)
-  const { data: doctorProfile, isLoading: profileLoading } = useQuery({
-    queryKey: ['doctor-onboarding-check'],
-    queryFn: async () => {
-      const { data } = await api.get('/doctors/me/profile');
-      return data.data;
-    },
-    enabled: !!user && user.role === 'doctor',
-  });
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+
+  // Check if doctor needs onboarding using useEffect (not useQuery to avoid caching)
+  useEffect(() => {
+    if (!user || user.role !== 'doctor') { setNeedsOnboarding(false); return; }
+    api.get('/doctors/me/profile')
+      .then(res => {
+        const degree = res.data?.data?.degree;
+        setNeedsOnboarding(!degree || degree === '');
+      })
+      .catch(() => setNeedsOnboarding(false));
+  }, [user?.id]);
 
   if (!user) return <AuthPage />;
 
-  // Wait for profile to load before deciding on onboarding
-  if (user.role === 'doctor' && profileLoading) {
-    return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', fontFamily:'system-ui', color:'#0A7B6C', fontSize:16 }}>Loading...</div>;
+  // Wait for onboarding check
+  if (user.role === 'doctor' && needsOnboarding === null) {
+    return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', fontFamily:'system-ui', color:'#0A7B6C', fontSize:16 }}>Loading your profile...</div>;
   }
 
-  if (user.role === 'doctor' && doctorProfile && (!doctorProfile.degree || doctorProfile.degree === '')) {
+  if (user.role === 'doctor' && needsOnboarding === true) {
     return <DoctorOnboarding onComplete={() => window.location.reload()} />;
   }
 
