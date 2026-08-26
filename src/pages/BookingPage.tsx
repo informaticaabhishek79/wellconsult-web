@@ -63,7 +63,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
         payment_method: 'razorpay',
       });
       setLoading(false);
-      window.location.href = window.location.origin + '?page=appointments';
+      alert('Appointment booked successfully! Click OK to view your appointments.'); window.location.reload();
     } catch (err: any) {
       const e = err.response?.data?.error?.message || '';
       setLoading(false);
@@ -72,7 +72,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
       } else if (e.includes('Patient')) {
         setMsg('Session expired. Please refresh and try again.');
       } else {
-        window.location.href = window.location.origin + '?page=appointments';
+        alert('Appointment booked successfully! Click OK to view your appointments.'); window.location.reload();
       }
     }
   };
@@ -245,3 +245,4 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
     </div>
   );
 }
+
