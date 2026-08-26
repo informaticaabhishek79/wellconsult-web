@@ -17,10 +17,24 @@ interface NavState { path: string; state?: any; }
 
 function AppContent() {
   const { user } = useAuth();
-  const [nav, setNav] = useState<NavState>({ path: user?.role === 'doctor' ? '/dashboard' : user?.role === 'admin' ? '/admin' : '/home' });
+  const getInitialPath = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    if (page) return '/' + page;
+    return user?.role === 'doctor' ? '/dashboard' : user?.role === 'admin' ? '/admin' : '/home';
+  };
+
+  const [nav, setNav] = useState<NavState>({ path: getInitialPath() });
   const [bookingDoctorId, setBookingDoctorId] = useState<string | null>(null);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    if (page) {
+      setNav({ path: '/' + page });
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
     if (user) setNav({ path: user.role === 'doctor' ? '/dashboard' : user.role === 'admin' ? '/admin' : '/home' });
   }, [user?.role]);
 

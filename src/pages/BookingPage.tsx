@@ -53,7 +53,6 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
   const handleBook = async () => {
     if (!isEmergency && !selSlot) { setMsg('Please select a time slot.'); return; }
     setLoading(true); setMsg('');
-    let success = false;
     try {
       await api.post('/appointments', {
         doctor_id:      doctorId,
@@ -63,19 +62,19 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
         is_emergency:   isEmergency,
         payment_method: 'razorpay',
       });
-      success = true;
+      setLoading(false);
+      window.location.href = window.location.origin + '?page=appointments';
     } catch (err: any) {
       const e = err.response?.data?.error?.message || '';
+      setLoading(false);
       if (e.includes('slot') || e.includes('unavailable')) {
         setMsg('This slot is already booked. Please select another.');
       } else if (e.includes('Patient')) {
         setMsg('Session expired. Please refresh and try again.');
       } else {
-        success = true;
+        window.location.href = window.location.origin + '?page=appointments';
       }
     }
-    setLoading(false);
-    if (success) onSuccess();
   };
 
   const fee = getFee();
