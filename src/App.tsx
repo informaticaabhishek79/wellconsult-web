@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from './store';
+import { api } from './api';
 import AuthPage from './pages/AuthPage';
 import PatientHome from './pages/PatientHome';
 import DoctorSearch from './pages/DoctorSearch';
