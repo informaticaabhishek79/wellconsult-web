@@ -10,6 +10,7 @@ import AppointmentsPage from './pages/AppointmentsPage';
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorOnboarding from './pages/DoctorOnboarding';
 import DoctorQuestionsPage from './pages/DoctorQuestionsPage';
+import DoctorAppointmentsPage from './pages/DoctorAppointmentsPage';
 import ChatPage from './pages/ChatPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
@@ -115,7 +116,7 @@ function AppContent() {
     if (user.role === 'doctor') {
       switch (path) {
         case '/dashboard':    return <DoctorDashboard onNav={onNav} />;
-        case '/appointments': return <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} />;
+        case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} />;
         case '/questions':    return <DoctorQuestionsPage />;
         case '/profile':      return <ProfilePage />;
         default:              return <DoctorDashboard onNav={onNav} />;
@@ -126,7 +127,7 @@ function AppContent() {
     switch (path) {
       case '/home':         return <PatientHome onNav={onNav} />;
       case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} />;
-      case '/appointments': return <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} />;
+      case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} />;
       case '/ask':          return <AskDoctorPage />;
       case '/profile':      return <ProfilePage />;
       default:              return <PatientHome onNav={onNav} />;
