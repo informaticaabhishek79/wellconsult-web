@@ -31,22 +31,23 @@ export default function AppointmentsPage({ onBook }: { onBook: () => void }) {
     if (!window.confirm(`Cancel your ${appt.consult_type} consultation with ${appt.doctor_name} on ${appt.appt_date?.slice(0,10)}?\n\nRefund processed in 3-5 business days.`)) return;
     try {
       await api.patch(`/appointments/${appt.id}/cancel`, { reason: 'Cancelled by patient' });
-      window.location.reload();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Could not cancel. Please try again.');
+      const e = err.response?.data?.error?.message || '';
+      if (e) { alert(e); return; }
     }
+    window.location.reload();
   };
 
   const handleReschedule = async (appt: any) => {
     if (!window.confirm(`This will cancel your appointment with ${appt.doctor_name} on ${appt.appt_date?.slice(0,10)} and let you book a new slot.\n\nContinue?`)) return;
     try {
       await api.patch(`/appointments/${appt.id}/cancel`, { reason: 'Rescheduled by patient' });
-      // Store doctor_id and navigate to booking
-      sessionStorage.setItem('reschedule_doctor_id', appt.doctor_id);
-      window.location.href = window.location.origin + '?page=doctors&reschedule=1';
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Could not reschedule. Please try again.');
+      const e = err.response?.data?.error?.message || '';
+      if (e) { alert(e); return; }
     }
+    sessionStorage.setItem('reschedule_doctor_id', appt.doctor_id);
+    window.location.href = window.location.origin + '?page=doctors&reschedule=1';
   };
 
   return (
