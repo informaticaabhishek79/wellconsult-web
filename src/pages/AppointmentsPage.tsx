@@ -33,6 +33,7 @@ export default function AppointmentsPage({ onBook }: { onBook: () => void }) {
     try {
       await api.patch(`/appointments/${appt.id}/cancel`, { reason: 'Cancelled by patient' });
       await refetch();
+      window.location.reload();
     } catch (err: any) {
       alert(err.response?.data?.error?.message || 'Could not cancel. Please try again.');
     }

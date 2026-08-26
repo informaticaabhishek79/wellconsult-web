@@ -1,4 +1,3 @@
-// v3
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
@@ -53,7 +52,8 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
 
   const handleBook = async () => {
     if (!isEmergency && !selSlot) { setMsg('Please select a time slot.'); return; }
-    setLoading(true); setMsg(''); console.log('booking v4');
+    setLoading(true); setMsg('');
+    let success = false;
     try {
       await api.post('/appointments', {
         doctor_id:      doctorId,
@@ -63,9 +63,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
         is_emergency:   isEmergency,
         payment_method: 'razorpay',
       });
-      setLoading(false);
-      onSuccess();
-      return;
+      success = true;
     } catch (err: any) {
       const e = err.response?.data?.error?.message || '';
       if (e.includes('slot') || e.includes('unavailable')) {
@@ -73,12 +71,11 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
       } else if (e.includes('Patient')) {
         setMsg('Session expired. Please refresh and try again.');
       } else {
-        // Booking likely succeeded despite error — navigate to appointments
-        setLoading(false);
-        onSuccess();
-        return;
+        success = true;
       }
-    } finally { setLoading(false); }
+    }
+    setLoading(false);
+    if (success) onSuccess();
   };
 
   const fee = getFee();
@@ -249,5 +246,3 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
     </div>
   );
 }
-
-
