@@ -68,8 +68,7 @@ function AppContent() {
 
   const renderPage = () => {
     if (bookingDoctorId) {
-      return <BookingPage
-        doctorId={bookingDoctorId}
+      return <BookingPage key={bookingDoctorId} doctorId={bookingDoctorId}
         onBack={() => setBookingDoctorId(null)}
         onSuccess={() => { setBookingDoctorId(null); setNav({ path: '/appointments' }); }}
       />;
@@ -115,3 +114,4 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+
