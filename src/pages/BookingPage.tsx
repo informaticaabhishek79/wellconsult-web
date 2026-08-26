@@ -51,6 +51,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
   const nextMonth = () => { if (month===11) { setYear(y=>y+1); setMonth(0); } else setMonth(m=>m+1); setSelDate(''); setSelSlot(''); };
 
   const handleBook = async () => {
+    if (loading) return;
     if (!isEmergency && !selSlot) { setMsg('Please select a time slot.'); return; }
     setLoading(true); setMsg('');
     try {
@@ -62,17 +63,16 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
         is_emergency:   isEmergency,
         payment_method: 'razorpay',
       });
+      setLoading(false);
       setBooked(true);
     } catch (err: any) {
       const e = err.response?.data?.error?.message || '';
+      setLoading(false);
       if (e.includes('slot') || e.includes('unavailable')) {
         setMsg('This slot is already booked. Please select another.');
-        setLoading(false);
       } else if (e.includes('Patient')) {
         setMsg('Session expired. Please refresh and try again.');
-        setLoading(false);
       } else {
-        // Booking succeeded despite error
         setBooked(true);
       }
     }
