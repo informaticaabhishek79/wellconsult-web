@@ -11,6 +11,7 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorOnboarding from './pages/DoctorOnboarding';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
+import AskDoctorPage from './pages/AskDoctorPage';
 import Sidebar from './components/Sidebar';
 import { useQuery } from '@tanstack/react-query';
 
@@ -118,6 +119,7 @@ function AppContent() {
       case '/home':         return <PatientHome onNav={onNav} />;
       case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} />;
       case '/appointments': return <AppointmentsPage onBook={() => onNav('/doctors')} />;
+      case '/ask':          return <AskDoctorPage />;
       case '/profile':      return <ProfilePage />;
       default:              return <PatientHome onNav={onNav} />;
     }

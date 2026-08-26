@@ -3,6 +3,7 @@ import { useAuth } from '../store';
 const NAV_PATIENT = [
   { icon:'🏠', label:'Home',          path:'/home' },
   { icon:'📅', label:'Appointments',  path:'/appointments' },
+  { icon:'💬', label:'Ask a Doctor',  path:'/ask' },
   { icon:'📋', label:'Prescriptions', path:'/prescriptions' },
   { icon:'📁', label:'Records',       path:'/records' },
   { icon:'👤', label:'Profile',       path:'/profile' },
