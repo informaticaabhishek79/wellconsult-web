@@ -57,7 +57,7 @@ function AppContent() {
   }, [user?.role]);
 
   // Check if doctor needs onboarding - must be before any early return (hooks rules)
-  const { data: doctorProfile } = useQuery({
+  const { data: doctorProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['doctor-onboarding-check'],
     queryFn: async () => {
       const { data } = await api.get('/doctors/me/profile');
@@ -68,7 +68,12 @@ function AppContent() {
 
   if (!user) return <AuthPage />;
 
-  if (user.role === 'doctor' && doctorProfile && !doctorProfile.degree) {
+  // Wait for profile to load before deciding on onboarding
+  if (user.role === 'doctor' && profileLoading) {
+    return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', fontFamily:'system-ui', color:'#0A7B6C', fontSize:16 }}>Loading...</div>;
+  }
+
+  if (user.role === 'doctor' && doctorProfile && (!doctorProfile.degree || doctorProfile.degree === '')) {
     return <DoctorOnboarding onComplete={() => window.location.reload()} />;
   }
 
