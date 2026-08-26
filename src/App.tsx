@@ -56,18 +56,17 @@ function AppContent() {
     if (user) setNav({ path: user.role === 'doctor' ? '/dashboard' : user.role === 'admin' ? '/admin' : '/home' });
   }, [user?.role]);
 
-  if (!user) return <AuthPage />;
-
-  // Check if doctor needs onboarding
+  // Check if doctor needs onboarding - must be before any early return (hooks rules)
   const { data: doctorProfile } = useQuery({
     queryKey: ['doctor-onboarding-check'],
     queryFn: async () => {
-      if (user.role !== 'doctor') return null;
       const { data } = await api.get('/doctors/me/profile');
       return data.data;
     },
-    enabled: user.role === 'doctor',
+    enabled: !!user && user.role === 'doctor',
   });
+
+  if (!user) return <AuthPage />;
 
   if (user.role === 'doctor' && doctorProfile && !doctorProfile.degree) {
     return <DoctorOnboarding onComplete={() => window.location.reload()} />;
