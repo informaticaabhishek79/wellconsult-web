@@ -7,9 +7,11 @@ import DoctorSearch from './pages/DoctorSearch';
 import BookingPage from './pages/BookingPage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import DoctorDashboard from './pages/DoctorDashboard';
+import DoctorOnboarding from './pages/DoctorOnboarding';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import Sidebar from './components/Sidebar';
+import { useQuery } from '@tanstack/react-query';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30000 } } });
 
@@ -56,6 +58,21 @@ function AppContent() {
 
   if (!user) return <AuthPage />;
 
+  // Check if doctor needs onboarding
+  const { data: doctorProfile } = useQuery({
+    queryKey: ['doctor-onboarding-check'],
+    queryFn: async () => {
+      if (user.role !== 'doctor') return null;
+      const { data } = await api.get('/doctors/me/profile');
+      return data.data;
+    },
+    enabled: user.role === 'doctor',
+  });
+
+  if (user.role === 'doctor' && doctorProfile && !doctorProfile.degree) {
+    return <DoctorOnboarding onComplete={() => window.location.reload()} />;
+  }
+
   const onNav = (path: string, state?: any) => {
     setBookingDoctorId(null);
     setNav({ path, state });
@@ -68,7 +85,8 @@ function AppContent() {
 
   const renderPage = () => {
     if (bookingDoctorId) {
-      return <BookingPage key={bookingDoctorId} doctorId={bookingDoctorId}
+      return <BookingPage
+        doctorId={bookingDoctorId}
         onBack={() => setBookingDoctorId(null)}
         onSuccess={() => { setBookingDoctorId(null); setNav({ path: '/appointments' }); }}
       />;
@@ -114,5 +132,3 @@ export default function App() {
     </QueryClientProvider>
   );
 }
-
-
