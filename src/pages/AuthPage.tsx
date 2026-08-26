@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useAuth } from '../store';
 import { api } from '../api';
 
@@ -82,7 +82,7 @@ export default function AuthPage() {
         role:      mode === 'patient-register' ? 'patient' : 'doctor',
       });
       setRegSuccess('Account created! You can now sign in.');
-      setTimeout(() => setMode('login'), 2000);
+      setTimeout(() => setMode('login'), 4000);
     } catch (err: any) {
       setRegError(err.response?.data?.error?.message || 'Registration failed. Please try again.');
     } finally { setRegLoading(false); }
