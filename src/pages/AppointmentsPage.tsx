@@ -13,6 +13,30 @@ const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
 
 export default function AppointmentsPage({ onBook, onChat }: { onBook: () => void; onChat?: (id: string, doctorName?: string) => void }) {
   const [tab, setTab] = useState<'upcoming'|'past'>('upcoming');
+  const [reviewing, setReviewing] = useState<any>(null);
+  const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const handleReview = async () => {
+    if (!rating) { alert('Please select a rating.'); return; }
+    setSubmittingReview(true);
+    try {
+      await api.post('/reviews', {
+        appointment_id: reviewing.id,
+        rating,
+        review_text: reviewText.trim() || undefined,
+      });
+      setReviewing(null);
+      setRating(0);
+      setReviewText('');
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Failed to submit review.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['my-appointments'],
@@ -51,6 +75,50 @@ export default function AppointmentsPage({ onBook, onChat }: { onBook: () => voi
   };
 
   return (
+    <>
+    {reviewing && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
+        <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:28, maxWidth:440, width:'100%', boxShadow:'var(--shadow-xl)' }}>
+          <h2 style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Rate your consultation</h2>
+          <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:20 }}>with {reviewing.doctor_name}</p>
+          
+          {/* Star rating */}
+          <div style={{ display:'flex', gap:8, marginBottom:20, justifyContent:'center' }}>
+            {[1,2,3,4,5].map(star => (
+              <div key={star} onClick={() => setRating(star)} style={{ fontSize:40, cursor:'pointer', color: star <= rating ? '#F59E0B' : '#E5E7EB', transition:'color 0.1s' }}>★</div>
+            ))}
+          </div>
+          {rating > 0 && (
+            <div style={{ textAlign:'center', fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
+              {['','Poor','Fair','Good','Very good','Excellent'][rating]}
+            </div>
+          )}
+
+          <textarea
+            placeholder="Share your experience (optional)..."
+            value={reviewText}
+            onChange={e => setReviewText(e.target.value)}
+            rows={3}
+            style={{ width:'100%', padding:'10px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', fontSize:14, outline:'none', resize:'vertical' as any, fontFamily:'var(--font-body)', boxSizing:'border-box' as any, marginBottom:16 }}
+          />
+
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={() => { setReviewing(null); setRating(0); setReviewText(''); }} style={{ padding:'10px 18px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'#fff', fontSize:14, cursor:'pointer', color:'var(--text-secondary)' }}>
+              Cancel
+            </button>
+            <button onClick={handleReview} disabled={!rating || submittingReview} style={{
+              flex:1, padding:'10px', borderRadius:'var(--r-md)', border:'none',
+              background: !rating || submittingReview ? 'var(--border)' : 'var(--primary)',
+              color: !rating || submittingReview ? 'var(--text-muted)' : '#fff',
+              fontSize:14, fontWeight:600, cursor: !rating || submittingReview ? 'not-allowed' : 'pointer',
+            }}>
+              {submittingReview ? 'Submitting...' : 'Submit review ★'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '28px 24px' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
         <h1 style={{ fontFamily:'var(--font-display)', fontSize:28, fontWeight:700, color:'var(--text-primary)' }}>My Appointments</h1>
@@ -109,6 +177,50 @@ export default function AppointmentsPage({ onBook, onChat }: { onBook: () => voi
             const isUpcoming    = tab === 'upcoming';
 
             return (
+    <>
+    {reviewing && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
+        <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:28, maxWidth:440, width:'100%', boxShadow:'var(--shadow-xl)' }}>
+          <h2 style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Rate your consultation</h2>
+          <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:20 }}>with {reviewing.doctor_name}</p>
+          
+          {/* Star rating */}
+          <div style={{ display:'flex', gap:8, marginBottom:20, justifyContent:'center' }}>
+            {[1,2,3,4,5].map(star => (
+              <div key={star} onClick={() => setRating(star)} style={{ fontSize:40, cursor:'pointer', color: star <= rating ? '#F59E0B' : '#E5E7EB', transition:'color 0.1s' }}>★</div>
+            ))}
+          </div>
+          {rating > 0 && (
+            <div style={{ textAlign:'center', fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
+              {['','Poor','Fair','Good','Very good','Excellent'][rating]}
+            </div>
+          )}
+
+          <textarea
+            placeholder="Share your experience (optional)..."
+            value={reviewText}
+            onChange={e => setReviewText(e.target.value)}
+            rows={3}
+            style={{ width:'100%', padding:'10px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', fontSize:14, outline:'none', resize:'vertical' as any, fontFamily:'var(--font-body)', boxSizing:'border-box' as any, marginBottom:16 }}
+          />
+
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={() => { setReviewing(null); setRating(0); setReviewText(''); }} style={{ padding:'10px 18px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'#fff', fontSize:14, cursor:'pointer', color:'var(--text-secondary)' }}>
+              Cancel
+            </button>
+            <button onClick={handleReview} disabled={!rating || submittingReview} style={{
+              flex:1, padding:'10px', borderRadius:'var(--r-md)', border:'none',
+              background: !rating || submittingReview ? 'var(--border)' : 'var(--primary)',
+              color: !rating || submittingReview ? 'var(--text-muted)' : '#fff',
+              fontSize:14, fontWeight:600, cursor: !rating || submittingReview ? 'not-allowed' : 'pointer',
+            }}>
+              {submittingReview ? 'Submitting...' : 'Submit review ★'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  (
               <div key={item.id} style={{ background:'#fff', borderRadius:'var(--r-lg)', border:'1px solid var(--border)', overflow:'hidden', boxShadow:'var(--shadow-sm)' }}>
                 <div style={{ display:'flex', alignItems:'stretch' }}>
                   <div style={{ width:4, background: canCancel ? 'var(--primary)' : item.status==='cancelled' ? 'var(--error)' : '#16A34A', flexShrink:0 }}/>
@@ -164,9 +276,14 @@ export default function AppointmentsPage({ onBook, onChat }: { onBook: () => voi
                     )}
 
                     {!isUpcoming && item.status === 'completed' && (
-                      <button onClick={onBook} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--primary)', background:'var(--primary-light)', color:'var(--primary)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                        🔄 Book again
-                      </button>
+                      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                        <button onClick={onBook} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--primary)', background:'var(--primary-light)', color:'var(--primary)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                          🔄 Book again
+                        </button>
+                        <button onClick={() => { setReviewing(item); setRating(0); setReviewText(''); }} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', border:'1.5px solid #F59E0B', background:'#FFFBEB', color:'#92400E', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                          ★ Rate consultation
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -176,5 +293,7 @@ export default function AppointmentsPage({ onBook, onChat }: { onBook: () => voi
         </div>
       )}
     </div>
+  );
+    </>
   );
 }
