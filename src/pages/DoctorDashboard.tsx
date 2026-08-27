@@ -12,6 +12,19 @@ export default function DoctorDashboard({ onNav }: { onNav: (path: string) => vo
     queryFn: async () => { const { data } = await api.get('/doctors/me/dashboard'); return data.data; },
   });
 
+  const { data: reviews } = useQuery({
+    queryKey: ['doctor-my-reviews'],
+    queryFn: async () => {
+      try {
+        const profile = await api.get('/doctors/me/profile');
+        const doctorId = profile.data?.data?.id;
+        if (!doctorId) return [];
+        const { data } = await api.get(`/reviews/doctor/${doctorId}`);
+        return data.data as any[] || [];
+      } catch { return []; }
+    },
+  });
+
   const STATS = [
     { icon:'📅', label:"Today's appointments", value: dashboard?.today_count ?? 0,        color:'#2563EB' },
     { icon:'🗓️', label:'Upcoming',             value: dashboard?.upcoming_count ?? 0,      color:'var(--primary)' },
