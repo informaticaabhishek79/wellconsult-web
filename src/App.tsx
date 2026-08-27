@@ -10,6 +10,7 @@ import AppointmentsPage from './pages/AppointmentsPage';
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorOnboarding from './pages/DoctorOnboarding';
 import DoctorQuestionsPage from './pages/DoctorQuestionsPage';
+import DoctorVerificationPage from './pages/DoctorVerificationPage';
 import DoctorAppointmentsPage from './pages/DoctorAppointmentsPage';
 import PrescriptionsPage from './pages/PrescriptionsPage';
 import WritePrescriptionPage from './pages/WritePrescriptionPage';
@@ -134,6 +135,7 @@ function AppContent() {
         case '/dashboard':    return <DoctorDashboard onNav={onNav} />;
         case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} onWritePrescription={(id, name) => setWritePrescription({appointmentId: id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
         case '/questions':    return <DoctorQuestionsPage />;
+      case '/verification':  return <DoctorVerificationPage />;
       case '/prescriptions': return <PrescriptionsPage />;
       case '/records':       return <MedicalHistoryPage />;
         case '/profile':      return <ProfilePage />;

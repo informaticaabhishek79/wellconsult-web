@@ -11,11 +11,13 @@ const NAV_PATIENT = [
 ];
 
 const NAV_DOCTOR = [
-  { icon:'📊', label:'Dashboard',    path:'/dashboard' },
-  { icon:'📅', label:'Appointments', path:'/appointments' },
-  { icon:'💬', label:'Patient Q&A',  path:'/questions' },
-  { icon:'👥', label:'Patients',     path:'/patients' },
-  { icon:'👤', label:'Profile',      path:'/profile' },
+  { icon:'📊', label:'Dashboard',     path:'/dashboard' },
+  { icon:'📅', label:'Appointments',  path:'/appointments' },
+  { icon:'💬', label:'Patient Q&A',   path:'/questions' },
+  { icon:'💊', label:'Prescriptions', path:'/prescriptions' },
+  { icon:'✅', label:'Verification',  path:'/verification' },
+  { icon:'👥', label:'Patients',      path:'/patients' },
+  { icon:'👤', label:'Profile',       path:'/profile' },
 ];
 
 const NAV_ADMIN = [
