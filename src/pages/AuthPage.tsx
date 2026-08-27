@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../store';
 import { api } from '../api';
 
@@ -82,7 +82,7 @@ export default function AuthPage() {
         role:      mode === 'patient-register' ? 'patient' : 'doctor',
       });
       setRegSuccess('Account created! You can now sign in.');
-      setTimeout(() => setMode('login'), 4000);
+      setTimeout(() => setMode('login'), 2000);
     } catch (err: any) {
       setRegError(err.response?.data?.error?.message || 'Registration failed. Please try again.');
     } finally { setRegLoading(false); }
@@ -176,15 +176,19 @@ export default function AuthPage() {
         <div style={{ width:'100%', maxWidth:400 }}>
 
           {/* Mode selector */}
-          <div style={{ display:'flex', gap:3, marginBottom:28, background:'var(--bg)', borderRadius:'var(--r-lg)', padding:4 }}>
-            {([['login','Sign in'],['patient-register','Patient'],['doctor-register','Doctor']] as const).map(([key,label]) => (
+          <div style={{ display:'flex', gap:6, marginBottom:28 }}>
+            {([
+              ['login','Sign in','#0A7B6C','#E6F4F1'],
+              ['patient-register','Patient','#2563EB','#EFF6FF'],
+              ['doctor-register','Doctor','#7C3AED','#F5F3FF'],
+            ] as const).map(([key,label,activeColor,activeBg]) => (
               <button key={key} onClick={() => setMode(key)} style={{
-                flex:1, padding:'8px 4px', borderRadius:'var(--r-md)', border:'none',
-                background: mode===key ? '#fff' : 'transparent',
-                boxShadow: mode===key ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-                fontSize:13, fontWeight: mode===key ? 600 : 500,
-                color: mode===key ? 'var(--primary)' : 'var(--text-secondary)',
-                cursor:'pointer', transition:'all 0.15s',
+                flex:1, padding:'10px 4px', borderRadius:'var(--r-md)', cursor:'pointer', transition:'all 0.2s',
+                border: `2px solid ${mode===key ? activeColor : 'var(--border)'}`,
+                background: mode===key ? activeBg : '#fff',
+                fontSize:13, fontWeight: mode===key ? 700 : 500,
+                color: mode===key ? activeColor : 'var(--text-secondary)',
+                boxShadow: mode===key ? `0 2px 8px ${activeColor}30` : 'none',
               }}>{label}</button>
             ))}
           </div>
