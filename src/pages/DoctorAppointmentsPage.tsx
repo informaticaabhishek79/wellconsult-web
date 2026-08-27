@@ -124,6 +124,11 @@ export default function DoctorAppointmentsPage({ onChat, onVideo }: { onChat?: (
                             💬 Chat
                           </button>
                         )}
+                        {onVideo && (
+                          <button onClick={() => onVideo(item.id, item.patient_name)} style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', background: '#7C3AED', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                            📹 Video
+                          </button>
+                        )}
                         {item.status === 'confirmed' && (
                           <button onClick={() => handleComplete(item)} style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--primary)', background: 'var(--primary-light)', color: 'var(--primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                             ✓ Mark complete
