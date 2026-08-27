@@ -1,4 +1,3 @@
-// v2
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
@@ -38,24 +37,8 @@ export default function WritePrescriptionPage({ appointmentId, patientName, onDo
 
     setSaving(true);
     try {
-      // Get or create consultation for appointment
-      let consultationId = null;
-      if (appointmentId) {
-        try {
-          const res = await api.get(`/consultations/${appointmentId}`);
-          consultationId = res.data.data?.id;
-        } catch {
-          try {
-            const res2 = await api.post(`/consultations/${appointmentId}/start`, {});
-            consultationId = res2.data.data?.id;
-          } catch {}
-        }
-      }
-
-      // If still no consultation, save prescription directly with appointment_id
       await api.post('/prescriptions', {
         appointment_id: appointmentId,
-        consultation_id: consultationId || undefined,
         medical_system: medSystem,
         notes: notes.trim() || undefined,
         items: validItems.map(item => ({
@@ -190,4 +173,3 @@ export default function WritePrescriptionPage({ appointmentId, patientName, onDo
     </div>
   );
 }
-
