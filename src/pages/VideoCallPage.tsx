@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { api } from '../api';
+import { useAuth } from '../store';
 import { io } from 'socket.io-client';
 import { TokenStorage } from '../api';
-import { useAuth } from '../store';
 
 const CF_APP_ID = 'b5c628780338d61f23ed3e8f952e44b8';
 const CF_TOKEN  = '31d7096a8a858ca1861d0907c0199e822906fc5d89fe650b6c85827a075e2d31';
@@ -24,24 +23,24 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   onClose: () => void;
 }) {
   const { user } = useAuth();
-  const [status, setStatus] = useState<'connecting'|'connected'|'error'>('connecting');
-  const [error, setError]   = useState('');
+  const [status, setStatus]         = useState<'connecting'|'connected'|'error'>('connecting');
+  const [error, setError]           = useState('');
   const [isMuted, setIsMuted]       = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [showChat, setShowChat]     = useState(false);
   const [messages, setMessages]     = useState<any[]>([]);
   const [chatInput, setChatInput]   = useState('');
-  const socketRef = useRef<any>(null);
 
   const localRef  = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
   const pcRef     = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const sessionId = useRef<string>('');
+  const socketRef = useRef<any>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     startCall();
-    // Init chat socket
+    // Init chat
     const token = TokenStorage.get('access_token');
     if (token) {
       const s = io('https://wellconsult-backend.onrender.com', {
@@ -55,6 +54,10 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
     return () => { cleanup(); socketRef.current?.disconnect(); };
   }, []);
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const cleanup = () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
     pcRef.current?.close();
@@ -63,26 +66,20 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const startCall = async () => {
     setStatus('connecting'); setError('');
     try {
-      // 1. Get user media
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       streamRef.current = stream;
       if (localRef.current) localRef.current.srcObject = stream;
 
-      // 2. Create RTCPeerConnection
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }],
         bundlePolicy: 'max-bundle',
       });
       pcRef.current = pc;
 
-      // 3. Add local tracks
       stream.getTracks().forEach(t => pc.addTransceiver(t, { direction: 'sendonly' }));
-
-      // 4. Add remote transceivers to receive tracks
       pc.addTransceiver('video', { direction: 'recvonly' });
       pc.addTransceiver('audio', { direction: 'recvonly' });
 
-      // 5. Handle remote tracks
       pc.ontrack = (e) => {
         if (remoteRef.current && e.streams[0]) {
           remoteRef.current.srcObject = e.streams[0];
@@ -90,44 +87,21 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         }
       };
 
-      // 6. Create SDP offer
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // 7. Create Cloudflare session (no body needed)
       const sessionData = await cfFetch('POST', '/sessions/new');
-      sessionId.current = sessionData.sessionId;
-
-      // 8. Push tracks to Cloudflare with SDP offer
       const tracksResp = await cfFetch('POST', `/sessions/${sessionData.sessionId}/tracks/new`, {
-        sessionDescription: {
-          type: offer.type,
-          sdp: offer.sdp,
-        },
-        tracks: stream.getTracks().map(t => ({
-          location: 'local',
-          trackName: t.id,
-        })),
+        sessionDescription: { type: offer.type, sdp: offer.sdp },
+        tracks: stream.getTracks().map(t => ({ location: 'local', trackName: t.id })),
       });
 
-      // 9. Set remote SDP answer from Cloudflare
       if (tracksResp.sessionDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(tracksResp.sessionDescription));
       }
 
-      // 10. ICE candidates
-      pc.onicecandidate = () => {};
-      pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-          setStatus('connected');
-        }
-      };
-
-      // Set connected after a short delay if remote track doesn't arrive
-      setTimeout(() => { if (status !== 'error') setStatus('connected'); }, 3000);
-
+      setTimeout(() => setStatus(s => s === 'connecting' ? 'connected' : s), 3000);
     } catch (err: any) {
-      console.error('Video error:', err);
       setError(err.message || 'Failed to start video call');
       setStatus('error');
     }
@@ -153,6 +127,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:'#0f0f1a', fontFamily:'var(--font-body)' }}>
+
       {/* Header */}
       <div style={{ padding:'10px 20px', background:'#16213e', display:'flex', alignItems:'center', gap:14, flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
         <button onClick={onClose} style={{ background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', width:34, height:34, borderRadius:'50%', cursor:'pointer', fontSize:16 }}>←</button>
@@ -166,81 +141,90 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', padding:'3px 10px', borderRadius:20, background:'rgba(255,255,255,0.06)' }}>🔒 Cloudflare Realtime</div>
       </div>
 
-      {/* Video + Chat area */}
+      {/* Main content: video + optional chat panel */}
       <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
-      <div style={{ flex:1, position:'relative', background:'#0a0a14', overflow:'hidden' }}>
-        <video ref={remoteRef} autoPlay playsInline style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
 
-        {/* Local PiP */}
-        <div style={{ position:'absolute', bottom:80, right:16, width:160, height:120, borderRadius:12, overflow:'hidden', border:'2px solid rgba(255,255,255,0.2)', background:'#222', boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
-          <video ref={localRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', transform:'scaleX(-1)' }}/>
-          {isVideoOff && (
-            <div style={{ position:'absolute', inset:0, background:'#333', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <div style={{ width:40, height:40, borderRadius:'50%', background:'#555', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>👤</div>
+        {/* Video area */}
+        <div style={{ flex:1, position:'relative', background:'#0a0a14' }}>
+          <video ref={remoteRef} autoPlay playsInline style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+
+          {/* Local PiP */}
+          <div style={{ position:'absolute', bottom:16, right:16, width:160, height:120, borderRadius:12, overflow:'hidden', border:'2px solid rgba(255,255,255,0.2)', background:'#222' }}>
+            <video ref={localRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', transform:'scaleX(-1)' }}/>
+            {isVideoOff && (
+              <div style={{ position:'absolute', inset:0, background:'#333', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <div style={{ width:40, height:40, borderRadius:'50%', background:'#555', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>👤</div>
+              </div>
+            )}
+            <div style={{ position:'absolute', bottom:4, left:0, right:0, textAlign:'center', fontSize:10, color:'rgba(255,255,255,0.7)' }}>You</div>
+          </div>
+
+          {/* Connecting overlay */}
+          {status==='connecting' && (
+            <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
+              <div style={{ fontSize:48 }}>📹</div>
+              <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>Connecting to {otherName}...</div>
+              <div style={{ display:'flex', gap:6 }}>
+                {[0,1,2].map(i => <div key={i} style={{ width:8, height:8, borderRadius:'50%', background:'#0A7B6C', animation:`pulse 1.2s ${i*0.2}s ease-in-out infinite` }}/>)}
+              </div>
             </div>
           )}
-          <div style={{ position:'absolute', bottom:4, left:0, right:0, textAlign:'center', fontSize:10, color:'rgba(255,255,255,0.7)' }}>You</div>
+
+          {/* Error overlay */}
+          {status==='error' && (
+            <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.85)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:24 }}>
+              <div style={{ fontSize:48 }}>❌</div>
+              <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>Could not connect</div>
+              <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', textAlign:'center', maxWidth:360 }}>{error}</div>
+              <div style={{ display:'flex', gap:10, marginTop:8 }}>
+                <button onClick={startCall} style={{ padding:'10px 20px', borderRadius:8, background:'#0A7B6C', color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>Retry</button>
+                <button onClick={onClose} style={{ padding:'10px 20px', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'#fff', border:'none', fontSize:14, cursor:'pointer' }}>Leave</button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Connecting overlay */}
-        {status==='connecting' && (
-          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
-            <div style={{ fontSize:48 }}>📹</div>
-            <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>Connecting to {otherName}...</div>
-            <div style={{ display:'flex', gap:6 }}>
-              {[0,1,2].map(i => <div key={i} style={{ width:8, height:8, borderRadius:'50%', background:'#0A7B6C', animation:`pulse 1.2s ${i*0.2}s ease-in-out infinite` }}/>)}
+        {/* Chat panel - shown beside video */}
+        {showChat && (
+          <div style={{ width:280, flexShrink:0, background:'#16213e', borderLeft:'1px solid rgba(255,255,255,0.1)', display:'flex', flexDirection:'column' }}>
+            <div style={{ padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <span style={{ fontSize:14, fontWeight:600, color:'#fff' }}>💬 Chat</span>
+              <button onClick={() => setShowChat(false)} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:16 }}>✕</button>
             </div>
-          </div>
-        )}
-
-        {/* Error overlay */}
-        {status==='error' && (
-          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.85)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:24 }}>
-            <div style={{ fontSize:48 }}>❌</div>
-            <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>Could not connect</div>
-            <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', textAlign:'center', maxWidth:360 }}>{error}</div>
-            <div style={{ display:'flex', gap:10, marginTop:8 }}>
-              <button onClick={startCall} style={{ padding:'10px 20px', borderRadius:8, background:'#0A7B6C', color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>Retry</button>
-              <button onClick={onClose} style={{ padding:'10px 20px', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'#fff', border:'none', fontSize:14, cursor:'pointer' }}>Leave</button>
+            <div style={{ flex:1, overflowY:'auto', padding:12, display:'flex', flexDirection:'column', gap:8 }}>
+              {messages.length === 0 && (
+                <div style={{ textAlign:'center', color:'rgba(255,255,255,0.3)', fontSize:12, marginTop:20 }}>No messages yet</div>
+              )}
+              {messages.map((m: any) => {
+                const own = m.sender_id === user?.id;
+                return (
+                  <div key={m.id} style={{ display:'flex', flexDirection:'column', alignItems: own ? 'flex-end' : 'flex-start' }}>
+                    <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', marginBottom:2 }}>{m.sender_name}</div>
+                    <div style={{ padding:'7px 11px', borderRadius:12, background: own ? '#0A7B6C' : 'rgba(255,255,255,0.12)', color:'#fff', fontSize:13, maxWidth:200, wordBreak:'break-word' as any }}>
+                      {m.message}
+                    </div>
+                    <div style={{ fontSize:9, color:'rgba(255,255,255,0.3)', marginTop:2 }}>
+                      {new Date(m.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' })}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef}/>
+            </div>
+            <div style={{ padding:'10px 12px', borderTop:'1px solid rgba(255,255,255,0.1)', display:'flex', gap:8 }}>
+              <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => e.key==='Enter' && sendChat()}
+                placeholder="Type a message..."
+                style={{ flex:1, padding:'8px 10px', borderRadius:8, border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.1)', color:'#fff', fontSize:13, outline:'none' }}/>
+              <button onClick={sendChat} disabled={!chatInput.trim()} style={{ width:34, height:34, borderRadius:'50%', border:'none', background: chatInput.trim() ? '#0A7B6C' : 'rgba(255,255,255,0.1)', color:'#fff', cursor: chatInput.trim() ? 'pointer' : 'default', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>➤</button>
             </div>
           </div>
         )}
       </div>
 
-      </div>{/* end video area */}
-      {/* Chat panel */}
-      {showChat && (
-        <div style={{ width:280, flexShrink:0, background:'#16213e', borderLeft:'1px solid rgba(255,255,255,0.1)', display:'flex', flexDirection:'column' }}>
-          <div style={{ padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            <span style={{ fontSize:14, fontWeight:600, color:'#fff' }}>💬 Chat</span>
-            <button onClick={() => setShowChat(false)} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:16 }}>✕</button>
-          </div>
-          <div style={{ flex:1, overflowY:'auto', padding:12, display:'flex', flexDirection:'column', gap:8 }}>
-            {messages.map((m: any) => (
-              <div key={m.id} style={{ display:'flex', flexDirection:'column', alignItems: m.sender_id === user?.id ? 'flex-end' : 'flex-start' }}>
-                <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', marginBottom:2 }}>{m.sender_name}</div>
-                <div style={{ padding:'7px 11px', borderRadius:12, background: m.sender_id === user?.id ? '#0A7B6C' : 'rgba(255,255,255,0.12)', color:'#fff', fontSize:13, maxWidth:200, wordBreak:'break-word' as any }}>
-                  {m.message}
-                </div>
-                <div style={{ fontSize:9, color:'rgba(255,255,255,0.3)', marginTop:2 }}>
-                  {new Date(m.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' })}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding:'10px 12px', borderTop:'1px solid rgba(255,255,255,0.1)', display:'flex', gap:8 }}>
-            <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key==='Enter' && sendChat()}
-              placeholder="Type a message..." style={{ flex:1, padding:'8px 10px', borderRadius:8, border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.1)', color:'#fff', fontSize:13, outline:'none' }}/>
-            <button onClick={sendChat} disabled={!chatInput.trim()} style={{ width:34, height:34, borderRadius:'50%', border:'none', background: chatInput.trim() ? '#0A7B6C' : 'rgba(255,255,255,0.1)', color:'#fff', cursor: chatInput.trim() ? 'pointer' : 'default', fontSize:14 }}>➤</button>
-          </div>
-        </div>
-      )}
-
-      </div>{/* end video+chat wrapper */}
-
       {/* Controls */}
       <div style={{ padding:'14px 20px', background:'#1a1a2e', display:'flex', alignItems:'center', justifyContent:'center', gap:16, flexShrink:0 }}>
-        <button onClick={() => setShowChat(s => !s)} style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, background: showChat ? '#0A7B6C' : 'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }} title="Toggle chat">
+        <button onClick={() => setShowChat(s => !s)} title="Toggle chat" style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, background: showChat ? '#0A7B6C' : 'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
           💬
         </button>
         <button onClick={toggleMute} title={isMuted?'Unmute':'Mute'} style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:20, background:isMuted?'#EF4444':'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
