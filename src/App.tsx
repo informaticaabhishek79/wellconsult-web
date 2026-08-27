@@ -66,7 +66,8 @@ function AppContent() {
       window.history.replaceState({}, '', window.location.pathname);
       return;
     }
-    if (user) setNav({ path: user.role === 'doctor' ? '/dashboard' : user.role === 'admin' ? '/admin' : '/home' });
+    // Only set default nav on initial login, not on every role change
+    if (user && !nav.path) setNav({ path: user.role === 'doctor' ? '/dashboard' : user.role === 'admin' ? '/admin' : '/home' });
   }, [user?.role]);
 
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
