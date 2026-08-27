@@ -34,6 +34,8 @@ function Field({ label, type='text', placeholder, value, onChange, required }: {
         }}
       />
     </div>
+    </div>
+    </>
   );
 }
 
@@ -58,6 +60,55 @@ export default function AuthPage() {
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState('');
   const [regSuccess, setRegSuccess] = useState('');
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [showReset, setShowReset] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+  const [resetUserId, setResetUserId] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  // Check URL for reset token on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('reset_token');
+    const userId = params.get('user_id');
+    if (token && userId) {
+      setResetToken(token);
+      setResetUserId(userId);
+      setShowReset(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail.trim()) { alert('Please enter your email address.'); return; }
+    setForgotLoading(true);
+    try {
+      await api.post('/auth/forgot-password', { email: forgotEmail.trim() });
+      setForgotSent(true);
+    } catch {
+      setForgotSent(true); // Always show success to prevent enumeration
+    } finally { setForgotLoading(false); }
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || !confirmPassword) { alert('Please fill in all fields.'); return; }
+    if (newPassword !== confirmPassword) { alert('Passwords do not match.'); return; }
+    if (newPassword.length < 8) { alert('Password must be at least 8 characters.'); return; }
+    setResetLoading(true);
+    try {
+      await api.post('/auth/reset-password', { user_id: resetUserId, token: resetToken, new_password: newPassword });
+      setResetSuccess(true);
+      setTimeout(() => { setShowReset(false); setResetSuccess(false); setNewPassword(''); setConfirmPassword(''); }, 3000);
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Reset failed. Please request a new link.');
+    } finally { setResetLoading(false); }
+  };
 
   useEffect(() => { clearError(); setRegError(''); setRegSuccess(''); }, [mode]);
 
@@ -88,7 +139,85 @@ export default function AuthPage() {
     } finally { setRegLoading(false); }
   };
 
+  // Reset password screen
+  if (showReset) {
+    return (
+      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)', fontFamily:'var(--font-body)', padding:24 }}>
+        <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:36, maxWidth:420, width:'100%', boxShadow:'var(--shadow-lg)' }}>
+          <div style={{ textAlign:'center', marginBottom:24 }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>🔐</div>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:24, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>
+              {resetSuccess ? 'Password reset!' : 'Set new password'}
+            </h2>
+            <p style={{ fontSize:14, color:'var(--text-secondary)' }}>
+              {resetSuccess ? 'You can now sign in with your new password.' : 'Enter your new password below.'}
+            </p>
+          </div>
+          {!resetSuccess && (
+            <>
+              <div style={{ marginBottom:14 }}>
+                <label style={{ display:'block', fontSize:13, fontWeight:500, color:'var(--text-primary)', marginBottom:5 }}>New password</label>
+                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 8 characters"
+                  style={{ width:'100%', padding:'11px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', fontSize:14, outline:'none', boxSizing:'border-box' as any }}/>
+              </div>
+              <div style={{ marginBottom:20 }}>
+                <label style={{ display:'block', fontSize:13, fontWeight:500, color:'var(--text-primary)', marginBottom:5 }}>Confirm password</label>
+                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repeat your new password"
+                  style={{ width:'100%', padding:'11px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', fontSize:14, outline:'none', boxSizing:'border-box' as any }}/>
+              </div>
+              <button onClick={handleResetPassword} disabled={resetLoading} style={{ width:'100%', padding:'13px', borderRadius:'var(--r-md)', border:'none', background: resetLoading ? 'var(--border)' : 'var(--primary)', color: resetLoading ? 'var(--text-muted)' : '#fff', fontSize:15, fontWeight:700, cursor: resetLoading ? 'not-allowed' : 'pointer' }}>
+                {resetLoading ? 'Resetting...' : 'Reset password'}
+              </button>
+            </>
+          )}
+          {resetSuccess && (
+            <button onClick={() => setShowReset(false)} style={{ width:'100%', padding:'13px', borderRadius:'var(--r-md)', border:'none', background:'var(--primary)', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer' }}>
+              Sign in now →
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Forgot password modal overlay
+  const ForgotModal = showForgot ? (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
+      <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:32, maxWidth:400, width:'100%', boxShadow:'var(--shadow-xl)' }}>
+        <h2 style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700, color:'var(--text-primary)', marginBottom:6 }}>Forgot password?</h2>
+        {!forgotSent ? (
+          <>
+            <p style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:20 }}>Enter your email and we'll send you a reset link.</p>
+            <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="your@email.com"
+              onKeyDown={e => e.key === 'Enter' && handleForgotPassword()}
+              style={{ width:'100%', padding:'11px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', fontSize:14, outline:'none', boxSizing:'border-box' as any, marginBottom:14 }}/>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => { setShowForgot(false); setForgotEmail(''); }} style={{ padding:'10px 18px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'#fff', fontSize:14, cursor:'pointer', color:'var(--text-secondary)' }}>Cancel</button>
+              <button onClick={handleForgotPassword} disabled={forgotLoading} style={{ flex:1, padding:'10px', borderRadius:'var(--r-md)', border:'none', background: forgotLoading ? 'var(--border)' : 'var(--primary)', color: forgotLoading ? 'var(--text-muted)' : '#fff', fontSize:14, fontWeight:600, cursor: forgotLoading ? 'not-allowed' : 'pointer' }}>
+                {forgotLoading ? 'Sending...' : 'Send reset link'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ textAlign:'center', padding:'20px 0' }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>📧</div>
+              <p style={{ fontSize:14, color:'var(--text-secondary)', lineHeight:1.6, marginBottom:20 }}>
+                If <strong>{forgotEmail}</strong> has an account, a reset link has been sent. Check your inbox and spam folder.
+              </p>
+            </div>
+            <button onClick={() => { setShowForgot(false); setForgotEmail(''); setForgotSent(false); }} style={{ width:'100%', padding:'11px', borderRadius:'var(--r-md)', border:'none', background:'var(--primary)', color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+              Done
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   return (
+    <>
+      {ForgotModal}
     <div style={{ display:'flex', minHeight:'100vh', fontFamily:'var(--font-body)' }}>
 
       {/* LEFT — Brand */}
