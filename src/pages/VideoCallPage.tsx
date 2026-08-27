@@ -166,7 +166,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', padding:'3px 10px', borderRadius:20, background:'rgba(255,255,255,0.06)' }}>🔒 Cloudflare Realtime</div>
       </div>
 
-      {/* Video area */}
+      {/* Video + Chat area */}
+      <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
       <div style={{ flex:1, position:'relative', background:'#0a0a14', overflow:'hidden' }}>
         <video ref={remoteRef} autoPlay playsInline style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
 
@@ -206,9 +207,10 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         )}
       </div>
 
+      </div>{/* end video area */}
       {/* Chat panel */}
       {showChat && (
-        <div style={{ position:'absolute', top:0, right:0, width:280, height:'100%', background:'rgba(22,33,62,0.97)', borderLeft:'1px solid rgba(255,255,255,0.1)', display:'flex', flexDirection:'column', zIndex:10 }}>
+        <div style={{ width:280, flexShrink:0, background:'#16213e', borderLeft:'1px solid rgba(255,255,255,0.1)', display:'flex', flexDirection:'column' }}>
           <div style={{ padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <span style={{ fontSize:14, fontWeight:600, color:'#fff' }}>💬 Chat</span>
             <button onClick={() => setShowChat(false)} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:16 }}>✕</button>
@@ -233,6 +235,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
           </div>
         </div>
       )}
+
+      </div>{/* end video+chat wrapper */}
 
       {/* Controls */}
       <div style={{ padding:'14px 20px', background:'#1a1a2e', display:'flex', alignItems:'center', justifyContent:'center', gap:16, flexShrink:0 }}>
