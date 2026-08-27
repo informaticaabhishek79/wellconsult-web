@@ -41,19 +41,20 @@ export default function WritePrescriptionPage({ appointmentId, patientName, onDo
       let consultationId = null;
       if (appointmentId) {
         try {
-          const { data } = await api.get(`/consultations/${appointmentId}`);
-          consultationId = data.data?.id;
+          const res = await api.get(`/consultations/${appointmentId}`);
+          consultationId = res.data.data?.id;
         } catch {
-          // Create consultation
-          const { data } = await api.post('/consultations', { appointment_id: appointmentId });
-          consultationId = data.data?.id;
+          try {
+            const res2 = await api.post(`/consultations/${appointmentId}/start`, {});
+            consultationId = res2.data.data?.id;
+          } catch {}
         }
       }
 
-      if (!consultationId) { alert('Could not find consultation. Please try again.'); setSaving(false); return; }
-
+      // If still no consultation, save prescription directly with appointment_id
       await api.post('/prescriptions', {
-        consultation_id: consultationId,
+        appointment_id: appointmentId,
+        consultation_id: consultationId || undefined,
         medical_system: medSystem,
         notes: notes.trim() || undefined,
         items: validItems.map(item => ({
