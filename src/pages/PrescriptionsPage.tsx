@@ -42,7 +42,7 @@ export default function PrescriptionsPage() {
         <div class="header">
           <div>
             <div class="logo">WellConsult</div>
-            <div class="doctor">Dr. ${rx.doctor_name}</div>
+            <div class="doctor">${rx.doctor_name}</div>
             <div class="date">Date: ${new Date(rx.issued_at).toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' })}</div>
           </div>
           <div class="rx-symbol">Rx</div>
@@ -71,7 +71,7 @@ export default function PrescriptionsPage() {
         
         <div class="signature">
           <p>_______________________</p>
-          <p>Dr. ${rx.doctor_name}</p>
+          <p>${rx.doctor_name}</p>
         </div>
         
         <div class="footer">
@@ -114,7 +114,7 @@ export default function PrescriptionsPage() {
             <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, #0E9E8A 100%)', padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#fff' }}>WellConsult</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>Dr. {selected.doctor_name}</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{selected.doctor_name}</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>
                   {new Date(selected.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
@@ -156,7 +156,7 @@ export default function PrescriptionsPage() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ width: 140, borderTop: '1px solid var(--border)', marginBottom: 6 }}/>
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Dr. {selected.doctor_name}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{selected.doctor_name}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Digital signature</div>
                 </div>
               </div>
@@ -183,7 +183,7 @@ export default function PrescriptionsPage() {
                   <div style={{ width: 44, height: 44, borderRadius: 'var(--r-md)', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>💊</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>
-                      {user?.role === 'doctor' ? rx.patient_name : `Dr. ${rx.doctor_name}`}
+                      {user?.role === 'doctor' ? rx.patient_name : `${rx.doctor_name}`}
                     </div>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 12, color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
@@ -207,4 +207,3 @@ export default function PrescriptionsPage() {
     </div>
   );
 }
-
