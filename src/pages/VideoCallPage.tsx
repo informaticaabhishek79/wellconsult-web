@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
+import { io } from 'socket.io-client';
+import { TokenStorage } from '../api';
 import { useAuth } from '../store';
 
 const CF_APP_ID = 'b5c628780338d61f23ed3e8f952e44b8';
@@ -26,6 +28,10 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const [error, setError]   = useState('');
   const [isMuted, setIsMuted]       = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [showChat, setShowChat]     = useState(false);
+  const [messages, setMessages]     = useState<any[]>([]);
+  const [chatInput, setChatInput]   = useState('');
+  const socketRef = useRef<any>(null);
 
   const localRef  = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
@@ -33,7 +39,21 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const streamRef = useRef<MediaStream | null>(null);
   const sessionId = useRef<string>('');
 
-  useEffect(() => { startCall(); return () => cleanup(); }, []);
+  useEffect(() => {
+    startCall();
+    // Init chat socket
+    const token = TokenStorage.get('access_token');
+    if (token) {
+      const s = io('https://wellconsult-backend.onrender.com', {
+        auth: { token }, transports: ['websocket', 'polling'],
+      });
+      s.on('connect', () => s.emit('join_room', { appointmentId }));
+      s.on('message_history', (msgs: any[]) => setMessages(msgs));
+      s.on('new_message', (msg: any) => setMessages(prev => [...prev, msg]));
+      socketRef.current = s;
+    }
+    return () => { cleanup(); socketRef.current?.disconnect(); };
+  }, []);
 
   const cleanup = () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
@@ -113,6 +133,12 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
     }
   };
 
+  const sendChat = () => {
+    if (!chatInput.trim() || !socketRef.current) return;
+    socketRef.current.emit('send_message', { appointmentId, message: chatInput.trim() });
+    setChatInput('');
+  };
+
   const toggleMute = () => {
     const t = streamRef.current?.getAudioTracks()[0];
     if (t) { t.enabled = !t.enabled; setIsMuted(!t.enabled); }
@@ -180,8 +206,39 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         )}
       </div>
 
+      {/* Chat panel */}
+      {showChat && (
+        <div style={{ position:'absolute', top:0, right:0, width:280, height:'100%', background:'rgba(22,33,62,0.97)', borderLeft:'1px solid rgba(255,255,255,0.1)', display:'flex', flexDirection:'column', zIndex:10 }}>
+          <div style={{ padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <span style={{ fontSize:14, fontWeight:600, color:'#fff' }}>💬 Chat</span>
+            <button onClick={() => setShowChat(false)} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:16 }}>✕</button>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:12, display:'flex', flexDirection:'column', gap:8 }}>
+            {messages.map((m: any) => (
+              <div key={m.id} style={{ display:'flex', flexDirection:'column', alignItems: m.sender_id === user?.id ? 'flex-end' : 'flex-start' }}>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', marginBottom:2 }}>{m.sender_name}</div>
+                <div style={{ padding:'7px 11px', borderRadius:12, background: m.sender_id === user?.id ? '#0A7B6C' : 'rgba(255,255,255,0.12)', color:'#fff', fontSize:13, maxWidth:200, wordBreak:'break-word' as any }}>
+                  {m.message}
+                </div>
+                <div style={{ fontSize:9, color:'rgba(255,255,255,0.3)', marginTop:2 }}>
+                  {new Date(m.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' })}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding:'10px 12px', borderTop:'1px solid rgba(255,255,255,0.1)', display:'flex', gap:8 }}>
+            <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key==='Enter' && sendChat()}
+              placeholder="Type a message..." style={{ flex:1, padding:'8px 10px', borderRadius:8, border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.1)', color:'#fff', fontSize:13, outline:'none' }}/>
+            <button onClick={sendChat} disabled={!chatInput.trim()} style={{ width:34, height:34, borderRadius:'50%', border:'none', background: chatInput.trim() ? '#0A7B6C' : 'rgba(255,255,255,0.1)', color:'#fff', cursor: chatInput.trim() ? 'pointer' : 'default', fontSize:14 }}>➤</button>
+          </div>
+        </div>
+      )}
+
       {/* Controls */}
       <div style={{ padding:'14px 20px', background:'#1a1a2e', display:'flex', alignItems:'center', justifyContent:'center', gap:16, flexShrink:0 }}>
+        <button onClick={() => setShowChat(s => !s)} style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, background: showChat ? '#0A7B6C' : 'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }} title="Toggle chat">
+          💬
+        </button>
         <button onClick={toggleMute} title={isMuted?'Unmute':'Mute'} style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:20, background:isMuted?'#EF4444':'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
           {isMuted?'🔇':'🎤'}
         </button>
