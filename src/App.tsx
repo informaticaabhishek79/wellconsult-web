@@ -15,6 +15,7 @@ import PrescriptionsPage from './pages/PrescriptionsPage';
 import WritePrescriptionPage from './pages/WritePrescriptionPage';
 import SymptomSearch from './pages/SymptomSearch';
 import ChatPage from './pages/ChatPage';
+import VideoCallPage from './pages/VideoCallPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import AskDoctorPage from './pages/AskDoctorPage';
@@ -45,6 +46,7 @@ function AppContent() {
   const [nav, setNav] = useState<NavState>({ path: getInitialPath() });
   const [bookingDoctorId, setBookingDoctorId] = useState<string | null>(getInitialDoctorId());
   const [chatAppointment, setChatAppointment] = useState<{id:string;doctorName?:string} | null>(null);
+  const [videoCall, setVideoCall] = useState<{id:string;doctorName?:string;patientName?:string} | null>(null);
   const [writePrescription, setWritePrescription] = useState<{appointmentId:string;patientName?:string} | null>(null);
 
   useEffect(() => {
@@ -105,6 +107,10 @@ function AppContent() {
       return <WritePrescriptionPage appointmentId={writePrescription.appointmentId} patientName={writePrescription.patientName} onDone={() => setWritePrescription(null)} />;
     }
 
+    if (videoCall) {
+      return <VideoCallPage appointmentId={videoCall.id} doctorName={videoCall.doctorName} patientName={videoCall.patientName} onClose={() => setVideoCall(null)} />;
+    }
+
     if (chatAppointment) {
       return <ChatPage appointmentId={chatAppointment.id} doctorName={chatAppointment.doctorName} onClose={() => setChatAppointment(null)} />;
     }
@@ -124,7 +130,7 @@ function AppContent() {
     if (user.role === 'doctor') {
       switch (path) {
         case '/dashboard':    return <DoctorDashboard onNav={onNav} />;
-        case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} />;
+        case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
         case '/questions':    return <DoctorQuestionsPage />;
       case '/prescriptions': return <PrescriptionsPage />;
         case '/profile':      return <ProfilePage />;
@@ -136,7 +142,7 @@ function AppContent() {
     switch (path) {
       case '/home':         return <PatientHome onNav={onNav} />;
       case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} />;
-      case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} />;
+      case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
       case '/ask':          return <AskDoctorPage />;
       case '/prescriptions': return <PrescriptionsPage />;
       case '/symptom':       return <SymptomSearch onBook={id => setBookingDoctorId(id)} />;

@@ -10,7 +10,7 @@ const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
   cancelled: {bg:'#FEF2F2',color:'#991B1B'},
 };
 
-export default function DoctorAppointmentsPage({ onChat }: { onChat?: (id: string, patientName?: string) => void }) {
+export default function DoctorAppointmentsPage({ onChat, onVideo }: { onChat?: (id: string, patientName?: string) => void; onVideo?: (id: string, patientName?: string) => void }) {
   const [tab, setTab] = useState<'upcoming'|'past'>('upcoming');
 
   const { data, isLoading, refetch } = useQuery({

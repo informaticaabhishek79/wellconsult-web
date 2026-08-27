@@ -11,9 +11,10 @@ const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
   no_show:   {bg:'#F9FAFB',color:'#374151'},
 };
 
-export default function AppointmentsPage({ onBook, onChat }: {
+export default function AppointmentsPage({ onBook, onChat, onVideo }: {
   onBook: () => void;
   onChat?: (id: string, doctorName?: string) => void;
+  onVideo?: (id: string, doctorName?: string) => void;
 }) {
   const [tab, setTab] = useState<'upcoming'|'past'>('upcoming');
   const [reviewing, setReviewing] = useState<any>(null);
@@ -192,9 +193,9 @@ export default function AppointmentsPage({ onBook, onChat }: {
                               💬 Chat
                             </button>
                           )}
-                          {item.status==='confirmed' && (
-                            <button style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'var(--primary)', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                              📹 Join session
+                          {item.status==='confirmed' && onVideo && (
+                            <button onClick={() => onVideo(item.id, item.doctor_name)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'#7C3AED', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                              📹 Join video
                             </button>
                           )}
                           {canReschedule && (
