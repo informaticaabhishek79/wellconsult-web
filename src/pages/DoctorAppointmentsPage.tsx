@@ -12,6 +12,20 @@ const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
 
 export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescription }: { onChat?: (id: string, patientName?: string) => void; onVideo?: (id: string, patientName?: string) => void; onWritePrescription?: (appointmentId: string, patientName?: string) => void }) {
   const [tab, setTab] = useState<'upcoming'|'past'>('upcoming');
+  const [viewingHistory, setViewingHistory] = useState<any>(null);
+  const [patientHistory, setPatientHistory] = useState<any>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const viewPatientHistory = async (item: any) => {
+    setViewingHistory(item);
+    setPatientHistory(null);
+    setLoadingHistory(true);
+    try {
+      const { data } = await api.get(`/patients/${item.patient_id}/history`);
+      setPatientHistory(data.data);
+    } catch { setPatientHistory(null); }
+    finally { setLoadingHistory(false); }
+  };
   const [followUp, setFollowUp] = useState<any>(null);
   const [followUpDays, setFollowUpDays] = useState('7');
   const [followUpNotes, setFollowUpNotes] = useState('');
@@ -66,6 +80,100 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
 
   return (
     <>
+    {viewingHistory && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16, overflowY:'auto' }}>
+        <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:28, maxWidth:560, width:'100%', boxShadow:'var(--shadow-xl)', margin:'auto' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:700, color:'var(--text-primary)' }}>
+              🏥 {viewingHistory.patient_name}'s Medical History
+            </h2>
+            <button onClick={() => { setViewingHistory(null); setPatientHistory(null); }} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
+          </div>
+
+          {loadingHistory && <div style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>Loading...</div>}
+
+          {!loadingHistory && !patientHistory && (
+            <div style={{ textAlign:'center', padding:40 }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>📋</div>
+              <div style={{ fontSize:15, color:'var(--text-muted)' }}>No medical history recorded yet</div>
+              <div style={{ fontSize:13, color:'var(--text-muted)', marginTop:4 }}>Patient hasn't filled in their health profile</div>
+            </div>
+          )}
+
+          {!loadingHistory && patientHistory && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
+                {[
+                  { label:'Blood group', value: patientHistory.blood_group || '—' },
+                  { label:'Height', value: patientHistory.height_cm ? `${patientHistory.height_cm}cm` : '—' },
+                  { label:'Weight', value: patientHistory.weight_kg ? `${patientHistory.weight_kg}kg` : '—' },
+                  { label:'BMI', value: patientHistory.height_cm && patientHistory.weight_kg ? (patientHistory.weight_kg / Math.pow(patientHistory.height_cm/100, 2)).toFixed(1) : '—' },
+                ].map(v => (
+                  <div key={v.label} style={{ padding:'10px', background:'var(--bg)', borderRadius:'var(--r-md)', textAlign:'center' }}>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{v.label}</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{v.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {patientHistory.chronic_conditions?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', marginBottom:8 }}>🏥 Chronic conditions</div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                    {(Array.isArray(patientHistory.chronic_conditions) ? patientHistory.chronic_conditions : JSON.parse(patientHistory.chronic_conditions || '[]')).map((c: string) => (
+                      <div key={c} style={{ padding:'3px 10px', borderRadius:'var(--r-full)', background:'#FEF2F2', color:'#991B1B', fontSize:12, border:'1px solid #FECACA' }}>{c}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {patientHistory.allergies?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', marginBottom:8 }}>⚠️ Allergies</div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                    {(Array.isArray(patientHistory.allergies) ? patientHistory.allergies : JSON.parse(patientHistory.allergies || '[]')).map((a: string) => (
+                      <div key={a} style={{ padding:'3px 10px', borderRadius:'var(--r-full)', background:'#FFFBEB', color:'#92400E', fontSize:12, border:'1px solid #FDE68A' }}>{a}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {patientHistory.current_medications && (
+                <div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', marginBottom:4 }}>💊 Current medications</div>
+                  <div style={{ fontSize:13, color:'var(--text-secondary)', background:'var(--bg)', padding:'10px 12px', borderRadius:'var(--r-md)' }}>{patientHistory.current_medications}</div>
+                </div>
+              )}
+
+              {patientHistory.past_surgeries && (
+                <div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', marginBottom:4 }}>🔪 Past surgeries</div>
+                  <div style={{ fontSize:13, color:'var(--text-secondary)', background:'var(--bg)', padding:'10px 12px', borderRadius:'var(--r-md)' }}>{patientHistory.past_surgeries}</div>
+                </div>
+              )}
+
+              {patientHistory.family_history && (
+                <div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', marginBottom:4 }}>👨‍👩‍👧 Family history</div>
+                  <div style={{ fontSize:13, color:'var(--text-secondary)', background:'var(--bg)', padding:'10px 12px', borderRadius:'var(--r-md)' }}>{patientHistory.family_history}</div>
+                </div>
+              )}
+
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                <div style={{ padding:'10px 12px', background:'var(--bg)', borderRadius:'var(--r-md)' }}>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:2 }}>Smoking</div>
+                  <div style={{ fontSize:13, fontWeight:600, textTransform:'capitalize' }}>{patientHistory.smoking || '—'}</div>
+                </div>
+                <div style={{ padding:'10px 12px', background:'var(--bg)', borderRadius:'var(--r-md)' }}>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:2 }}>Alcohol</div>
+                  <div style={{ fontSize:13, fontWeight:600, textTransform:'capitalize' }}>{patientHistory.alcohol || '—'}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
     {followUp && (
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
         <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:28, maxWidth:420, width:'100%', boxShadow:'var(--shadow-xl)' }}>
@@ -178,6 +286,9 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
                             📹 Video
                           </button>
                         )}
+                        <button onClick={() => viewPatientHistory(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'#0369A1', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                          📋 History
+                        </button>
                         {onWritePrescription && ['confirmed','completed'].includes(item.status) && (
                           <button onClick={() => onWritePrescription(item.id, item.patient_name)} style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', background: '#0A7B6C', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                             💊 Prescription
