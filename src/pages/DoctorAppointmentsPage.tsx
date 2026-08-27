@@ -10,8 +10,27 @@ const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
   cancelled: {bg:'#FEF2F2',color:'#991B1B'},
 };
 
-export default function DoctorAppointmentsPage({ onChat, onVideo }: { onChat?: (id: string, patientName?: string) => void; onVideo?: (id: string, patientName?: string) => void }) {
+export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescription }: { onChat?: (id: string, patientName?: string) => void; onVideo?: (id: string, patientName?: string) => void; onWritePrescription?: (appointmentId: string, patientName?: string) => void }) {
   const [tab, setTab] = useState<'upcoming'|'past'>('upcoming');
+  const [followUp, setFollowUp] = useState<any>(null);
+  const [followUpDays, setFollowUpDays] = useState('7');
+  const [followUpNotes, setFollowUpNotes] = useState('');
+  const [savingFollowUp, setSavingFollowUp] = useState(false);
+
+  const handleFollowUp = async () => {
+    if (!followUpDays) { alert('Please enter follow-up days.'); return; }
+    setSavingFollowUp(true);
+    try {
+      await api.post(`/doctors/me/appointments/${followUp.id}/followup`, {
+        follow_up_days: parseInt(followUpDays),
+        notes: followUpNotes.trim() || undefined,
+      });
+      alert(`Follow-up set for ${followUpDays} days. Patient will be reminded.`);
+      setFollowUp(null); setFollowUpDays('7'); setFollowUpNotes('');
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Failed to set follow-up.');
+    } finally { setSavingFollowUp(false); }
+  };
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['doctor-appointments'],
@@ -46,6 +65,36 @@ export default function DoctorAppointmentsPage({ onChat, onVideo }: { onChat?: (
   };
 
   return (
+    <>
+    {followUp && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
+        <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:28, maxWidth:420, width:'100%', boxShadow:'var(--shadow-xl)' }}>
+          <h2 style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Set follow-up period</h2>
+          <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:20 }}>for {followUp.patient_name}</p>
+          <div style={{ marginBottom:14 }}>
+            <label style={{ display:'block', fontSize:13, fontWeight:500, color:'var(--text-primary)', marginBottom:5 }}>Follow-up in how many days?</label>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:8 }}>
+              {['3','7','14','30'].map(d => (
+                <div key={d} onClick={() => setFollowUpDays(d)} style={{ padding:'6px 16px', borderRadius:'var(--r-full)', cursor:'pointer', border:`1.5px solid ${followUpDays===d ? 'var(--primary)' : 'var(--border)'}`, background: followUpDays===d ? 'var(--primary)' : '#fff', color: followUpDays===d ? '#fff' : 'var(--text-secondary)', fontSize:13, fontWeight: followUpDays===d ? 600 : 400 }}>
+                  {d} days
+                </div>
+              ))}
+              <input type="number" value={followUpDays} onChange={e => setFollowUpDays(e.target.value)} placeholder="Custom" style={{ width:80, padding:'6px 10px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', fontSize:13, outline:'none' }}/>
+            </div>
+          </div>
+          <div style={{ marginBottom:18 }}>
+            <label style={{ display:'block', fontSize:13, fontWeight:500, color:'var(--text-primary)', marginBottom:5 }}>Instructions for patient (optional)</label>
+            <textarea value={followUpNotes} onChange={e => setFollowUpNotes(e.target.value)} rows={3} placeholder="e.g. Take medication and come back for review..." style={{ width:'100%', padding:'9px 12px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', fontSize:13, outline:'none', resize:'vertical' as any, fontFamily:'var(--font-body)', boxSizing:'border-box' as any }}/>
+          </div>
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={() => { setFollowUp(null); setFollowUpDays('7'); setFollowUpNotes(''); }} style={{ padding:'10px 18px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'#fff', fontSize:14, cursor:'pointer', color:'var(--text-secondary)' }}>Cancel</button>
+            <button onClick={handleFollowUp} disabled={savingFollowUp} style={{ flex:1, padding:'10px', borderRadius:'var(--r-md)', border:'none', background: savingFollowUp ? 'var(--border)' : 'var(--primary)', color: savingFollowUp ? 'var(--text-muted)' : '#fff', fontSize:14, fontWeight:600, cursor: savingFollowUp ? 'not-allowed' : 'pointer' }}>
+              {savingFollowUp ? 'Saving...' : '📅 Set follow-up'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '28px 24px', fontFamily: 'var(--font-body)' }}>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 24 }}>
         My Appointments
@@ -129,6 +178,16 @@ export default function DoctorAppointmentsPage({ onChat, onVideo }: { onChat?: (
                             📹 Video
                           </button>
                         )}
+                        {onWritePrescription && ['confirmed','completed'].includes(item.status) && (
+                          <button onClick={() => onWritePrescription(item.id, item.patient_name)} style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', background: '#0A7B6C', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                            💊 Prescription
+                          </button>
+                        )}
+                        {item.status === 'completed' && (
+                          <button onClick={() => { setFollowUp(item); setFollowUpDays('7'); setFollowUpNotes(''); }} style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', background: '#EA580C', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                            📅 Follow-up
+                          </button>
+                        )}
                         {item.status === 'confirmed' && (
                           <button onClick={() => handleComplete(item)} style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--primary)', background: 'var(--primary-light)', color: 'var(--primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                             ✓ Mark complete
@@ -144,5 +203,7 @@ export default function DoctorAppointmentsPage({ onChat, onVideo }: { onChat?: (
         </div>
       )}
     </div>
+  );
+    </>
   );
 }
