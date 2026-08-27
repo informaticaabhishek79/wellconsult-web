@@ -10,8 +10,8 @@ interface SessionInfo {
   is_doctor: boolean;
 }
 
-const CF_APP_ID = 'f121b0afa306b4cdd136ab6f084c2e5d';
-const CF_APP_TOKEN = '6e70c75eeeb13fc7699cb7b4c6e977996a9e394e9d633ecb0f4f8aa2d805f99d';
+const CF_APP_ID = 'b5c628780338d61f23ed3e8f952e44b8';
+const CF_APP_TOKEN = '31d7096a8a858ca1861d0907c0199e822906fc5d89fe650b6c85827a075e2d31';
 const CF_BASE = `https://rtc.live.cloudflare.com/v1/apps/${CF_APP_ID}`;
 
 async function cfFetch(method: string, path: string, body?: any) {
