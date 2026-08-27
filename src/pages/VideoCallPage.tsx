@@ -142,10 +142,10 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       </div>
 
       {/* Main content: video + optional chat panel */}
-      <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+      <div style={{ flex:1, display:'flex', overflow:'hidden', minHeight:0 }}>
 
         {/* Video area */}
-        <div style={{ flex:1, position:'relative', background:'#0a0a14' }}>
+        <div style={{ flex:1, minWidth:0, position:'relative', background:'#0a0a14' }}>
           <video ref={remoteRef} autoPlay playsInline style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
 
           {/* Local PiP */}
