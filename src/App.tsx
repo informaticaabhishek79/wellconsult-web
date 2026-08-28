@@ -35,16 +35,16 @@ function AppContent() {
   useEffect(() => {
     // Check both query params and hash (Render strips query params on static sites)
     const queryParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
     const oauthError = queryParams.get('oauth_error');
-    // Check all possible locations for oauth code
-    const oauthCode = queryParams.get('oauth_code') 
-      || hashParams.get('oauth')
-      || (window as any).__OAUTH_CODE__
-      || localStorage.getItem('oauth_code');
+    // Read oauth code from cookie set by backend
+    const getCookie = (name: string) => {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    };
+    const oauthCode = getCookie('oauth_code');
     if (oauthCode) {
-      localStorage.removeItem('oauth_code');
-      delete (window as any).__OAUTH_CODE__;
+      // Clear the cookie
+      document.cookie = 'oauth_code=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.onrender.com; secure; samesite=none';
     }
 
     if (oauthError) {
