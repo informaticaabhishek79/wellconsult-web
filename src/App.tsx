@@ -95,7 +95,7 @@ function AppContent() {
   const [chatAppointment, setChatAppointment] = useState<{id:string;doctorName?:string} | null>(null);
   const [videoCall, setVideoCall] = useState<{id:string;doctorName?:string;patientName?:string} | null>(null);
   const [writePrescription, setWritePrescription] = useState<{appointmentId:string;patientName?:string} | null>(null);
-  const [legalSlug, setLegalSlug] = useState<string | null>(null);
+  const [legalSlug, setLegalSlug] = useState<string | null>(null); // legal routing v2
   const [showLegalList, setShowLegalList] = useState(false);
 
   useEffect(() => {
