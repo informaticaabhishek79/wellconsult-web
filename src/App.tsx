@@ -33,9 +33,13 @@ function AppContent() {
 
   // Handle Google OAuth callback at App level
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const oauthCode = params.get('oauth_code');
-    const oauthError = params.get('oauth_error');
+    // Check both query params and hash (Render strips query params on static sites)
+    const hash = window.location.hash.replace('#', '');
+    const hashParams = new URLSearchParams(hash);
+    const queryParams = new URLSearchParams(window.location.search);
+
+    const oauthCode = hashParams.get('oauth_code') || queryParams.get('oauth_code');
+    const oauthError = hashParams.get('oauth_error') || queryParams.get('oauth_error');
 
     if (oauthError) {
       console.error('OAuth error:', oauthError);
