@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
+import PatientProfileDoctor from './PatientProfileDoctor';
 
 const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
   booked:    {bg:'#EFF6FF',color:'#1D4ED8'},
@@ -13,6 +14,7 @@ const STATUS_STYLE: Record<string, {bg:string;color:string}> = {
 export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescription }: { onChat?: (id: string, patientName?: string) => void; onVideo?: (id: string, patientName?: string) => void; onWritePrescription?: (appointmentId: string, patientName?: string) => void }) {
   const [tab, setTab] = useState<'upcoming'|'past'>('upcoming');
   const [viewingHistory, setViewingHistory] = useState<any>(null);
+  const [viewingPatient, setViewingPatient] = useState<any>(null);
   const [patientHistory, setPatientHistory] = useState<any>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [viewingRecords, setViewingRecords] = useState<any>(null);
@@ -196,6 +198,13 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
         </div>
       </div>
     )}
+    {viewingPatient && (
+      <PatientProfileDoctor
+        patientId={viewingPatient.patient_id}
+        patientName={viewingPatient.patient_name}
+        onClose={() => setViewingPatient(null)}
+      />
+    )}
     {viewingRecords && (
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16, overflowY:'auto' }}>
         <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:28, maxWidth:700, width:'100%', boxShadow:'var(--shadow-xl)', margin:'auto', maxHeight:'85vh', overflowY:'auto' }}>
@@ -363,11 +372,8 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
                             📹 Video
                           </button>
                         )}
-                        <button onClick={() => viewPatientHistory(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'#0369A1', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                          📋 History
-                        </button>
-                        <button onClick={() => viewPatientRecords(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'#7C3AED', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                          📁 Records
+                        <button onClick={() => setViewingPatient(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'#0369A1', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                          👤 Patient Profile
                         </button>
                         {onWritePrescription && ['confirmed','completed'].includes(item.status) && (
                           <button onClick={() => onWritePrescription(item.id, item.patient_name)} style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', background: '#0A7B6C', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
