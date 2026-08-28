@@ -86,17 +86,6 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       });
       pcRef.current = pc;
 
-      // Add send-only transceivers for local tracks
-      const transceivers: RTCRtpTransceiver[] = [];
-      for (const track of stream.getTracks()) {
-        const transceiver = pc.addTransceiver(track, { direction: 'sendonly' });
-        transceivers.push(transceiver);
-      }
-
-      // Add receive-only transceivers for remote tracks
-      pc.addTransceiver('video', { direction: 'recvonly' });
-      pc.addTransceiver('audio', { direction: 'recvonly' });
-
       pc.ontrack = (e) => {
         if (remoteRef.current && e.streams[0]) {
           remoteRef.current.srcObject = e.streams[0];
@@ -104,32 +93,33 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         }
       };
 
-      // Create offer and set local description
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+      // Step 1: Push local tracks to Cloudflare (sendonly)
+      const sendTransceivers: RTCRtpTransceiver[] = [];
+      for (const track of stream.getTracks()) {
+        sendTransceivers.push(pc.addTransceiver(track, { direction: 'sendonly' }));
+      }
 
-      // Get mid from transceivers after setLocalDescription
-      const tracks = transceivers.map(t => ({
-        location: 'local',
-        mid: t.mid,
-        trackName: t.sender.track?.kind || 'unknown',
-      })).filter(t => t.mid !== null);
+      const offer1 = await pc.createOffer();
+      await pc.setLocalDescription(offer1);
 
-      console.log('Sending tracks to CF:', JSON.stringify(tracks));
+      const sendTracks = sendTransceivers
+        .filter(t => t.mid !== null)
+        .map(t => ({ location: 'local', mid: t.mid, trackName: t.sender.track?.kind }));
 
+      // Get session from backend (which calls Cloudflare)
       const { data } = await api.post(`/video/session/${appointmentId}`, {
         sdp: pc.localDescription?.sdp,
         type: pc.localDescription?.type,
-        tracks,
+        tracks: sendTracks,
       });
 
-      console.log('CF response:', JSON.stringify(data.data?.sessionDescription?.type));
+      if (!data.data?.sessionDescription) throw new Error('No SDP answer from Cloudflare');
 
-      if (data.data?.sessionDescription) {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.data.sessionDescription));
-      }
+      // Set remote answer for send tracks
+      await pc.setRemoteDescription(new RTCSessionDescription(data.data.sessionDescription));
 
-      setTimeout(() => setStatus(s => s === 'connecting' ? 'connected' : s), 3000);
+      setStatus('connected');
+      setTimeout(() => setStatus(s => s === 'connecting' ? 'connected' : s), 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to start video call');
       setStatus('error');
