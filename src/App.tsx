@@ -35,8 +35,17 @@ function AppContent() {
   useEffect(() => {
     // Check both query params and hash (Render strips query params on static sites)
     const queryParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
     const oauthError = queryParams.get('oauth_error');
-    const oauthCode = queryParams.get('oauth_code');
+    // Check all possible locations for oauth code
+    const oauthCode = queryParams.get('oauth_code') 
+      || hashParams.get('oauth')
+      || (window as any).__OAUTH_CODE__
+      || localStorage.getItem('oauth_code');
+    if (oauthCode) {
+      localStorage.removeItem('oauth_code');
+      delete (window as any).__OAUTH_CODE__;
+    }
 
     if (oauthError) {
       console.error('OAuth error:', oauthError);
