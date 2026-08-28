@@ -44,8 +44,21 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const cleanup = () => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    pcRef.current?.close();
+    // Stop all tracks immediately to turn off camera/mic indicator
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => {
+        t.stop();
+        t.enabled = false;
+      });
+      streamRef.current = null;
+    }
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    // Clear video elements
+    if (localRef.current) localRef.current.srcObject = null;
+    if (remoteRef.current) remoteRef.current.srcObject = null;
   };
 
   const startCall = async () => {
@@ -126,7 +139,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:'#0f0f1a', fontFamily:'var(--font-body)' }}>
       <div style={{ padding:'10px 20px', background:'#16213e', display:'flex', alignItems:'center', gap:14, flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
-        <button onClick={onClose} style={{ background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', width:34, height:34, borderRadius:'50%', cursor:'pointer', fontSize:16 }}>←</button>
+        <button onClick={() => { cleanup(); setTimeout(onClose, 100); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', width:34, height:34, borderRadius:'50%', cursor:'pointer', fontSize:16 }}>←</button>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:14, fontWeight:600, color:'#fff' }}>📹 Video Consultation</div>
           <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginTop:1 }}>
@@ -223,7 +236,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         <button onClick={() => setShowChat(s => !s)} title="Toggle chat" style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, background: showChat ? '#0A7B6C' : 'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>💬</button>
         <button onClick={toggleMute} title={isMuted?'Unmute':'Mute'} style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:20, background:isMuted?'#EF4444':'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>{isMuted?'🔇':'🎤'}</button>
         <button onClick={toggleVideo} title={isVideoOff?'Turn on camera':'Turn off camera'} style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:20, background:isVideoOff?'#EF4444':'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>{isVideoOff?'📵':'📹'}</button>
-        <button onClick={() => { cleanup(); onClose(); }} title="End call" style={{ width:56, height:56, borderRadius:'50%', border:'none', cursor:'pointer', background:'#EF4444', fontSize:22, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(239,68,68,0.4)' }}>📵</button>
+        <button onClick={() => { cleanup(); setTimeout(onClose, 100); }} title="End call" style={{ width:56, height:56, borderRadius:'50%', border:'none', cursor:'pointer', background:'#EF4444', fontSize:22, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(239,68,68,0.4)' }}>📵</button>
       </div>
       <style>{`@keyframes pulse { 0%,60%,100% { opacity:0.3; transform:scale(1); } 30% { opacity:1; transform:scale(1.3); } }`}</style>
     </div>
