@@ -15,6 +15,10 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
   const [viewingHistory, setViewingHistory] = useState<any>(null);
   const [patientHistory, setPatientHistory] = useState<any>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [viewingRecords, setViewingRecords] = useState<any>(null);
+  const [patientRecords, setPatientRecords] = useState<any[]>([]);
+  const [loadingRecords, setLoadingRecords] = useState(false);
+  const [recordsTab, setRecordsTab] = useState<'diagnostic'|'pathological'>('diagnostic');
 
   const viewPatientHistory = async (item: any) => {
     setViewingHistory(item);
@@ -25,6 +29,24 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
       setPatientHistory(data.data);
     } catch { setPatientHistory(null); }
     finally { setLoadingHistory(false); }
+  };
+
+  const viewPatientRecords = async (item: any) => {
+    setViewingRecords(item);
+    setPatientRecords([]);
+    setLoadingRecords(true);
+    try {
+      const { data } = await api.get(`/patients/me/records/patient/${item.patient_id}`);
+      setPatientRecords(data.data || []);
+    } catch { setPatientRecords([]); }
+    finally { setLoadingRecords(false); }
+  };
+
+  const viewRecord = async (record: any) => {
+    try {
+      const { data } = await api.get(`/patients/me/records/${record.id}/view`);
+      window.open(data.data.url, '_blank');
+    } catch { alert('Could not load document.'); }
   };
   const [followUp, setFollowUp] = useState<any>(null);
   const [followUpDays, setFollowUpDays] = useState('7');
@@ -174,6 +196,61 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
         </div>
       </div>
     )}
+    {viewingRecords && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16, overflowY:'auto' }}>
+        <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:28, maxWidth:700, width:'100%', boxShadow:'var(--shadow-xl)', margin:'auto', maxHeight:'85vh', overflowY:'auto' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:700, color:'var(--text-primary)' }}>
+              📁 {viewingRecords.patient_name}'s Medical Records
+            </h2>
+            <button onClick={() => setViewingRecords(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
+          </div>
+
+          {/* Category tabs */}
+          <div style={{ display:'flex', gap:8, marginBottom:16 }}>
+            {(['diagnostic','pathological'] as const).map(tab => (
+              <button key={tab} onClick={() => setRecordsTab(tab)} style={{
+                flex:1, padding:'8px', borderRadius:'var(--r-md)', cursor:'pointer',
+                border:`1.5px solid ${recordsTab===tab ? (tab==='diagnostic'?'#2563EB':'#7C3AED') : 'var(--border)'}`,
+                background: recordsTab===tab ? (tab==='diagnostic'?'#EFF6FF':'#F5F3FF') : '#fff',
+                color: recordsTab===tab ? (tab==='diagnostic'?'#2563EB':'#7C3AED') : 'var(--text-secondary)',
+                fontSize:13, fontWeight: recordsTab===tab ? 700 : 400,
+              }}>
+                {tab==='diagnostic' ? '🔬 Diagnostic Reports' : '🧪 Lab Reports'}
+              </button>
+            ))}
+          </div>
+
+          {loadingRecords && <div style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>Loading...</div>}
+
+          {!loadingRecords && patientRecords.filter(r => r.category===recordsTab).length === 0 && (
+            <div style={{ textAlign:'center', padding:40 }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>📂</div>
+              <div style={{ fontSize:15, color:'var(--text-muted)' }}>No {recordsTab} reports uploaded yet</div>
+            </div>
+          )}
+
+          {!loadingRecords && (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {patientRecords.filter(r => r.category===recordsTab).map((r: any) => (
+                <div key={r.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'var(--bg)', borderRadius:'var(--r-md)', border:'1px solid var(--border)' }}>
+                  <div style={{ fontSize:20 }}>{r.category==='diagnostic'?'🔬':'🧪'}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{r.test_name}</div>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
+                      {r.file_name} {r.report_date ? '• ' + new Date(r.report_date).toLocaleDateString('en-IN') : ''}
+                    </div>
+                  </div>
+                  <button onClick={() => viewRecord(r)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', border:'1px solid var(--primary)', background:'var(--primary-light)', color:'var(--primary)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    👁️ View
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
     {followUp && (
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
         <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:28, maxWidth:420, width:'100%', boxShadow:'var(--shadow-xl)' }}>
@@ -288,6 +365,9 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
                         )}
                         <button onClick={() => viewPatientHistory(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'#0369A1', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                           📋 History
+                        </button>
+                        <button onClick={() => viewPatientRecords(item)} style={{ padding:'6px 14px', borderRadius:'var(--r-md)', background:'#7C3AED', color:'#fff', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                          📁 Records
                         </button>
                         {onWritePrescription && ['confirmed','completed'].includes(item.status) && (
                           <button onClick={() => onWritePrescription(item.id, item.patient_name)} style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', background: '#0A7B6C', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
