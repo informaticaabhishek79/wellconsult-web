@@ -51,7 +51,19 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const startCall = async () => {
     setStatus('connecting'); setError('');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      } catch (permErr: any) {
+        const isDenied = permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError';
+        if (isDenied) {
+          setError('PERMISSION_DENIED');
+        } else {
+          setError(permErr.message || 'Could not access camera/microphone.');
+        }
+        setStatus('error');
+        return;
+      }
       streamRef.current = stream;
       if (localRef.current) localRef.current.srcObject = stream;
 
@@ -141,14 +153,41 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
             </div>
           )}
           {status==='error' && (
-            <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.85)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:24 }}>
-              <div style={{ fontSize:48 }}>❌</div>
-              <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>Could not connect</div>
-              <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', textAlign:'center', maxWidth:360 }}>{error}</div>
-              <div style={{ display:'flex', gap:10, marginTop:8 }}>
-                <button onClick={startCall} style={{ padding:'10px 20px', borderRadius:8, background:'#0A7B6C', color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>Retry</button>
-                <button onClick={onClose} style={{ padding:'10px 20px', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'#fff', border:'none', fontSize:14, cursor:'pointer' }}>Leave</button>
-              </div>
+            <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.9)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:24 }}>
+              {error === 'PERMISSION_DENIED' ? (
+                <>
+                  <div style={{ fontSize:56 }}>📷</div>
+                  <div style={{ fontSize:18, color:'#fff', fontWeight:700 }}>Camera & Microphone Access Required</div>
+                  <div style={{ fontSize:14, color:'rgba(255,255,255,0.7)', textAlign:'center', maxWidth:400, lineHeight:1.7 }}>
+                    WellConsult needs access to your camera and microphone for video consultation.
+                  </div>
+                  <div style={{ background:'rgba(255,255,255,0.1)', borderRadius:12, padding:'16px 20px', maxWidth:420, width:'100%' }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#fff', marginBottom:10 }}>How to allow access:</div>
+                    <div style={{ fontSize:13, color:'rgba(255,255,255,0.7)', lineHeight:2 }}>
+                      1. Click the 🔒 lock icon in your browser address bar<br/>
+                      2. Find <strong style={{color:'#fff'}}>Camera</strong> and <strong style={{color:'#fff'}}>Microphone</strong><br/>
+                      3. Change both from <strong style={{color:'#EF4444'}}>Block</strong> to <strong style={{color:'#22C55E'}}>Allow</strong><br/>
+                      4. Click <strong style={{color:'#fff'}}>Retry</strong> below
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', gap:10, marginTop:4 }}>
+                    <button onClick={startCall} style={{ padding:'12px 28px', borderRadius:8, background:'#0A7B6C', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+                      🔄 Retry after allowing
+                    </button>
+                    <button onClick={onClose} style={{ padding:'12px 20px', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'#fff', border:'none', fontSize:14, cursor:'pointer' }}>Leave</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize:48 }}>❌</div>
+                  <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>Could not connect</div>
+                  <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', textAlign:'center', maxWidth:360 }}>{error}</div>
+                  <div style={{ display:'flex', gap:10, marginTop:8 }}>
+                    <button onClick={startCall} style={{ padding:'10px 20px', borderRadius:8, background:'#0A7B6C', color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>Retry</button>
+                    <button onClick={onClose} style={{ padding:'10px 20px', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'#fff', border:'none', fontSize:14, cursor:'pointer' }}>Leave</button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
