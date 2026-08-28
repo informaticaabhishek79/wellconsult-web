@@ -36,10 +36,7 @@ function AppContent() {
     // Check both query params and hash (Render strips query params on static sites)
     const queryParams = new URLSearchParams(window.location.search);
     const oauthError = queryParams.get('oauth_error');
-
-    // Read OAuth code from localStorage (set by backend HTML redirect page)
-    const oauthCode = localStorage.getItem('oauth_code');
-    if (oauthCode) localStorage.removeItem('oauth_code');
+    const oauthCode = queryParams.get('oauth_code');
 
     if (oauthError) {
       console.error('OAuth error:', oauthError);
