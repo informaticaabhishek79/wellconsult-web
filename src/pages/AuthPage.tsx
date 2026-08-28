@@ -39,7 +39,7 @@ function SubmitBtn({ loading, label }: { loading: boolean; label: string }) {
 }
 
 export default function AuthPage() {
-  const { login } = useAuth();
+  const { login, error: storeError } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,12 +54,14 @@ export default function AuthPage() {
   const [pEmail, setPEmail] = useState('');
   const [pPhone, setPPhone] = useState('');
   const [pPassword, setPPassword] = useState('');
+  const [pConfirm, setPConfirm] = useState('');
 
   // Doctor register fields
   const [dName, setDName] = useState('');
   const [dEmail, setDEmail] = useState('');
   const [dPhone, setDPhone] = useState('');
   const [dPassword, setDPassword] = useState('');
+  const [dConfirm, setDConfirm] = useState('');
   const [dSystem, setDSystem] = useState('allopathy');
 
   // Forgot password
@@ -93,10 +95,12 @@ export default function AuthPage() {
     e.preventDefault();
     setError('');
     await login(email, password);
+    setTimeout(() => { const e = useAuth.getState().error; if (e) setError(e); }, 100);
   };
 
   const handlePatientRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (pPassword !== pConfirm) { setError('Passwords do not match.'); return; }
     setError(''); setLoading(true);
     try {
       await api.post('/auth/register', { full_name: pName, email: pEmail, phone: pPhone, password: pPassword, role: 'patient' });
@@ -109,6 +113,7 @@ export default function AuthPage() {
 
   const handleDoctorRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (dPassword !== dConfirm) { setError('Passwords do not match.'); return; }
     setError(''); setLoading(true);
     try {
       await api.post('/auth/register', { full_name: dName, email: dEmail, phone: dPhone, password: dPassword, role: 'doctor', medical_system: dSystem });
@@ -307,6 +312,7 @@ export default function AuthPage() {
                   <Field label="Email address" type="email" placeholder="you@example.com" value={pEmail} onChange={setPEmail} />
                   <Field label="Phone number" placeholder="+91 98765 43210" value={pPhone} onChange={setPPhone} />
                   <Field label="Password" type="password" placeholder="Minimum 8 characters" value={pPassword} onChange={setPPassword} />
+                  <Field label="Confirm password" type="password" placeholder="Repeat your password" value={pConfirm} onChange={setPConfirm} />
                   <SubmitBtn loading={loading} label="Create patient account" />
                 </form>
               </>
@@ -328,6 +334,7 @@ export default function AuthPage() {
                     </select>
                   </div>
                   <Field label="Password" type="password" placeholder="Minimum 8 characters" value={dPassword} onChange={setDPassword} />
+                  <Field label="Confirm password" type="password" placeholder="Repeat your password" value={dConfirm} onChange={setDConfirm} />
                   <SubmitBtn loading={loading} label="Create doctor account" />
                 </form>
               </>
