@@ -6,7 +6,8 @@ const NAV_PATIENT = [
   { icon:'🔍', label:'Symptom search', path:'/symptom' },
   { icon:'💬', label:'Ask a Doctor',   path:'/ask' },
   { icon:'💊', label:'Prescriptions',  path:'/prescriptions' },
-  { icon:'📁', label:'Records',        path:'/records' },
+  { icon:'📁', label:'My Records',     path:'/records' },
+  { icon:'🏥', label:'Medical History', path:'/history' },
   { icon:'👤', label:'Profile',        path:'/profile' },
 ];
 

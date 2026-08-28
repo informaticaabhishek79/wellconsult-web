@@ -21,6 +21,7 @@ import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import AskDoctorPage from './pages/AskDoctorPage';
 import MedicalHistoryPage from './pages/MedicalHistoryPage';
+import MedicalRecordsPage from './pages/MedicalRecordsPage';
 import Sidebar from './components/Sidebar';
 import { useQuery } from '@tanstack/react-query';
 
@@ -179,7 +180,8 @@ function AppContent() {
         case '/questions':    return <DoctorQuestionsPage />;
       case '/verification':  return <DoctorVerificationPage />;
       case '/prescriptions': return <PrescriptionsPage />;
-      case '/records':       return <MedicalHistoryPage />;
+      case '/records':       return <MedicalRecordsPage />;
+      case '/history':       return <MedicalHistoryPage />;
         case '/profile':      return <ProfilePage />;
         default:              return <DoctorDashboard onNav={onNav} />;
       }
@@ -192,7 +194,8 @@ function AppContent() {
       case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} onWritePrescription={(id, name) => setWritePrescription({appointmentId: id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
       case '/ask':          return <AskDoctorPage />;
       case '/prescriptions': return <PrescriptionsPage />;
-      case '/records':       return <MedicalHistoryPage />;
+      case '/records':       return <MedicalRecordsPage />;
+      case '/history':       return <MedicalHistoryPage />;
       case '/symptom':       return <SymptomSearch onBook={id => setBookingDoctorId(id)} />;
       case '/profile':      return <ProfilePage />;
       default:              return <PatientHome onNav={onNav} />;
