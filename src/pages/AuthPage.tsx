@@ -366,6 +366,21 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
+    {/* Footer with legal links */}
+      <div style={{ position:'fixed', bottom:0, left:0, right:0, padding:'10px 24px', background:'rgba(255,255,255,0.95)', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'center', flexWrap:'wrap', gap:'16px', zIndex:10 }}>
+        {[
+          { label:'Terms of Service', slug:'terms' },
+          { label:'Privacy Policy', slug:'privacy' },
+          { label:'Refund Policy', slug:'refund-policy' },
+          { label:'Medical Disclaimer', slug:'medical-disclaimer' },
+          { label:'Contact Us', slug:'contact' },
+        ].map(link => (
+          <a key={link.slug} href={`https://wellconsult-web.onrender.com/legal/${link.slug}`} target="_blank" rel="noreferrer"
+            style={{ fontSize:12, color:'var(--text-muted)', textDecoration:'none', cursor:'pointer' }}>
+            {link.label}
+          </a>
+        ))}
+      </div>
     </>
   );
 }

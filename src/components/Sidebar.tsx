@@ -9,7 +9,6 @@ const NAV_PATIENT = [
   { icon:'📁', label:'My Records',     path:'/records' },
   { icon:'🏥', label:'Medical History', path:'/history' },
   { icon:'👤', label:'Profile',        path:'/profile' },
-  { icon:'📋', label:'Legal & Policies', path:'/legal' },
 ];
 
 const NAV_DOCTOR = [
@@ -20,7 +19,6 @@ const NAV_DOCTOR = [
   { icon:'✅', label:'Verification',  path:'/verification' },
   { icon:'👥', label:'Patients',      path:'/patients' },
   { icon:'👤', label:'Profile',       path:'/profile' },
-  { icon:'📋', label:'Legal & Policies', path:'/legal' },
 ];
 
 const NAV_ADMIN = [
