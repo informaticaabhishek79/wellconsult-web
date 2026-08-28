@@ -80,6 +80,7 @@ export default function AuthPage() {
   const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
+    console.log('[OAuth] href:', window.location.href);
     const params = new URLSearchParams(window.location.search);
 
     // Handle Google OAuth callback
