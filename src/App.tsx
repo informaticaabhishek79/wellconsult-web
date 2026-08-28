@@ -202,6 +202,7 @@ function AppContent() {
       case '/records':       return <MedicalRecordsPage />;
       case '/history':       return <MedicalHistoryPage />;
       case '/symptom':       return <SymptomSearch onBook={id => setBookingDoctorId(id)} />;
+      case '/legal':         return legalSlug ? <LegalPage slug={legalSlug} onBack={() => setLegalSlug(null)} /> : <LegalPagesPublic onView={(slug) => setLegalSlug(slug)} />;
       case '/profile':      return <ProfilePage />;
       default:              return <PatientHome onNav={onNav} />;
     }
