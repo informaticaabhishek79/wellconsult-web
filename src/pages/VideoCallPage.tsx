@@ -86,7 +86,14 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       });
       pcRef.current = pc;
 
-      stream.getTracks().forEach(t => pc.addTransceiver(t, { direction: 'sendonly' }));
+      // Add send-only transceivers for local tracks
+      const transceivers: RTCRtpTransceiver[] = [];
+      for (const track of stream.getTracks()) {
+        const transceiver = pc.addTransceiver(track, { direction: 'sendonly' });
+        transceivers.push(transceiver);
+      }
+
+      // Add receive-only transceivers for remote tracks
       pc.addTransceiver('video', { direction: 'recvonly' });
       pc.addTransceiver('audio', { direction: 'recvonly' });
 
@@ -97,26 +104,26 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         }
       };
 
+      // Create offer and set local description
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Get mid values from senders AFTER setLocalDescription
-      const senders = pc.getSenders();
-      const tracks = senders
-        .filter(s => s.track)
-        .map(s => ({
-          location: 'local',
-          mid: s.getParameters().encodings?.[0]?.rid || 
-               pc.getTransceivers().find(t => t.sender === s)?.mid || null,
-          trackName: s.track!.kind,
-        }))
-        .filter(t => t.mid !== null);
+      // Get mid from transceivers after setLocalDescription
+      const tracks = transceivers.map(t => ({
+        location: 'local',
+        mid: t.mid,
+        trackName: t.sender.track?.kind || 'unknown',
+      })).filter(t => t.mid !== null);
+
+      console.log('Sending tracks to CF:', JSON.stringify(tracks));
 
       const { data } = await api.post(`/video/session/${appointmentId}`, {
-        sdp: offer.sdp,
-        type: offer.type,
+        sdp: pc.localDescription?.sdp,
+        type: pc.localDescription?.type,
         tracks,
       });
+
+      console.log('CF response:', JSON.stringify(data.data?.sessionDescription?.type));
 
       if (data.data?.sessionDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(data.data.sessionDescription));
