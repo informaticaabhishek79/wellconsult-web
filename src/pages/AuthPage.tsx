@@ -88,18 +88,27 @@ export default function AuthPage() {
     const userParam = params.get('user');
     const oauthError = params.get('oauth_error');
 
-    if (accessToken && userParam) {
-      try {
-        const userData = JSON.parse(userParam);
-        // Use same keys as TokenStorage
-        localStorage.setItem('access_token', accessToken);
-        if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
-        localStorage.setItem('wc_user', JSON.stringify(userData));
-        window.history.replaceState({}, '', window.location.pathname);
-        // Use store's init to load the user
-        useAuth.getState().init();
-        return;
-      } catch {}
+    // Handle Google OAuth session code
+    const oauthCode = params.get('oauth_code');
+    if (oauthCode) {
+      window.history.replaceState({}, '', window.location.pathname);
+      // Exchange code for tokens
+      fetch('https://wellconsult-backend.onrender.com/api/v1/auth/google/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: oauthCode }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success && data.data) {
+            localStorage.setItem('access_token', data.data.accessToken);
+            localStorage.setItem('refresh_token', data.data.refreshToken);
+            localStorage.setItem('wc_user', JSON.stringify(data.data.user));
+            useAuth.getState().init();
+          }
+        })
+        .catch(() => setError('Google sign-in failed. Please try again.'));
+      return;
     }
 
     if (oauthError) {
