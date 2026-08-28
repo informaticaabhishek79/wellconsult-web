@@ -22,6 +22,7 @@ import ProfilePage from './pages/ProfilePage';
 import AskDoctorPage from './pages/AskDoctorPage';
 import MedicalHistoryPage from './pages/MedicalHistoryPage';
 import MedicalRecordsPage from './pages/MedicalRecordsPage';
+import DoctorProfilePage from './pages/DoctorProfilePage';
 import LegalPage from './pages/LegalPage';
 import LegalPagesPublic from './pages/LegalPagesPublic';
 import Sidebar from './components/Sidebar';
@@ -96,6 +97,7 @@ function AppContent() {
   const [videoCall, setVideoCall] = useState<{id:string;doctorName?:string;patientName?:string} | null>(null);
   const [writePrescription, setWritePrescription] = useState<{appointmentId:string;patientName?:string} | null>(null);
   const [legalSlug, setLegalSlug] = useState<string | null>(null); // legal routing v2
+  const [viewingDoctorId, setViewingDoctorId] = useState<string | null>(null);
   const [showLegalList, setShowLegalList] = useState(false);
 
   useEffect(() => {
@@ -157,6 +159,10 @@ function AppContent() {
       return <WritePrescriptionPage appointmentId={writePrescription.appointmentId} patientName={writePrescription.patientName} onDone={() => setWritePrescription(null)} />;
     }
 
+    if (viewingDoctorId) {
+      return <DoctorProfilePage doctorId={viewingDoctorId} onBook={(id) => { setViewingDoctorId(null); setBookingDoctorId(id); }} onAsk={() => { setViewingDoctorId(null); onNav('/ask'); }} />;
+    }
+
     if (videoCall) {
       return <VideoCallPage appointmentId={videoCall.id} doctorName={videoCall.doctorName} patientName={videoCall.patientName} onClose={() => setVideoCall(null)} />;
     }
@@ -195,7 +201,7 @@ function AppContent() {
     // Patient
     switch (path) {
       case '/home':         return <PatientHome onNav={onNav} />;
-      case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} />;
+      case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} onViewProfile={id => setViewingDoctorId(id)} />;
       case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} onWritePrescription={(id, name) => setWritePrescription({appointmentId: id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
       case '/ask':          return <AskDoctorPage />;
       case '/prescriptions': return <PrescriptionsPage />;
