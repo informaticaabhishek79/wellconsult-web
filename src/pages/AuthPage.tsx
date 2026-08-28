@@ -91,11 +91,13 @@ export default function AuthPage() {
     if (accessToken && userParam) {
       try {
         const userData = JSON.parse(userParam);
+        // Use same keys as TokenStorage
         localStorage.setItem('access_token', accessToken);
         if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
         localStorage.setItem('wc_user', JSON.stringify(userData));
         window.history.replaceState({}, '', window.location.pathname);
-        window.location.reload();
+        // Use store's init to load the user
+        useAuth.getState().init();
         return;
       } catch {}
     }
