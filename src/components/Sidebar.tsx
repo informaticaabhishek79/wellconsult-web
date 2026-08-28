@@ -19,6 +19,7 @@ const NAV_DOCTOR = [
   { icon:'✅', label:'Verification',  path:'/verification' },
   { icon:'👥', label:'Patients',      path:'/patients' },
   { icon:'👤', label:'Profile',       path:'/profile' },
+  { icon:'📋', label:'Legal & Policies', path:'/legal' },
 ];
 
 const NAV_ADMIN = [

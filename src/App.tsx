@@ -23,6 +23,7 @@ import AskDoctorPage from './pages/AskDoctorPage';
 import MedicalHistoryPage from './pages/MedicalHistoryPage';
 import MedicalRecordsPage from './pages/MedicalRecordsPage';
 import LegalPage from './pages/LegalPage';
+import LegalPagesPublic from './pages/LegalPagesPublic';
 import Sidebar from './components/Sidebar';
 import { useQuery } from '@tanstack/react-query';
 
@@ -95,6 +96,7 @@ function AppContent() {
   const [videoCall, setVideoCall] = useState<{id:string;doctorName?:string;patientName?:string} | null>(null);
   const [writePrescription, setWritePrescription] = useState<{appointmentId:string;patientName?:string} | null>(null);
   const [legalSlug, setLegalSlug] = useState<string | null>(null);
+  const [showLegalList, setShowLegalList] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -156,7 +158,10 @@ function AppContent() {
     }
 
     if (legalSlug) {
-      return <LegalPage slug={legalSlug} onBack={() => setLegalSlug(null)} />;
+      return <LegalPage slug={legalSlug} onBack={() => { setLegalSlug(null); setShowLegalList(true); }} />;
+    }
+    if (showLegalList) {
+      return <LegalPagesPublic onView={(slug) => { setShowLegalList(false); setLegalSlug(slug); }} />;
     }
 
     if (videoCall) {
@@ -189,6 +194,8 @@ function AppContent() {
       case '/records':       return <MedicalRecordsPage />;
       case '/history':       return <MedicalHistoryPage />;
         case '/profile':      return <ProfilePage />;
+      case '/legal':        return <LegalPagesPublic onView={(slug) => setLegalSlug(slug)} />;
+      case '/legal':        return <LegalPagesPublic onView={(slug) => setLegalSlug(slug)} />;
         default:              return <DoctorDashboard onNav={onNav} />;
       }
     }
