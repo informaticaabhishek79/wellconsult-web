@@ -41,7 +41,7 @@ const DEFAULT_PAGES = [
   { slug:'medical-record-access', title:'Medical Record Access Policy', category:'patient', sort_order:5, content:`<h2>Medical Record Access Policy</h2><h3>Your Records Are Yours</h3><p>All medical records, prescriptions, and health data on WellConsult belong to you. WellConsult acts as a custodian of your data on your behalf.</p><h3>Who Can Access Your Records</h3><ul><li><strong>You:</strong> Full access to all your records at all times</li><li><strong>Your consulting doctors:</strong> Can view records relevant to your consultation during and after the consultation period</li><li><strong>WellConsult staff:</strong> Only for technical support with your explicit permission, or as required by law</li><li><strong>No third parties:</strong> Your records are never sold or shared with insurers, employers, or marketers</li></ul><h3>Requesting Your Records</h3><p>You can download your records from the My Records section. For a complete data export, email records@wellconsult.in.</p><h3>Retention</h3><p>Medical consultation records are retained for 7 years as mandated by Indian medical regulations. Personal account data can be deleted upon request.</p>` },
 ];
 
-export default function LegalPagesAdmin() {
+export default function LegalPagesAdmin({ onView }: { onView?: (slug: string) => void }) {
   const qc = useQueryClient();
   const [activeCategory, setActiveCategory] = useState('public');
   const [editing, setEditing] = useState<any>(null);
@@ -213,10 +213,10 @@ export default function LegalPagesAdmin() {
                 </div>
               </div>
               <div style={{ display:'flex', gap:6 }}>
-                <a href={`https://wellconsult-web.onrender.com/legal/${page.slug}`} target="_blank" rel="noreferrer"
-                  style={{ padding:'6px 12px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'#fff', color:'var(--text-secondary)', fontSize:12, cursor:'pointer', textDecoration:'none' }}>
+                <button onClick={() => onView && onView(page.slug)}
+                  style={{ padding:'6px 12px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'#fff', color:'var(--text-secondary)', fontSize:12, cursor:'pointer' }}>
                   👁️ View
-                </a>
+                </button>
                 <button onClick={() => handleEdit(page)} style={{ padding:'6px 12px', borderRadius:'var(--r-md)', border:'1px solid var(--primary)', background:'var(--primary-light)', color:'var(--primary)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                   ✏️ Edit
                 </button>

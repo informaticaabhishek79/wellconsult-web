@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import LegalPagesAdmin from './LegalPagesAdmin';
+import LegalPage from './LegalPage';
 import { api } from '../api';
 
 export default function AdminPage() {
   const [tab, setTab] = useState<'pending'|'kyc'|'legal'|'stats'>('pending');
+  const [adminLegalSlug, setAdminLegalSlug] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [docUrl, setDocUrl] = useState('');
   const [deciding, setDeciding] = useState<string | null>(null);
@@ -130,7 +132,7 @@ export default function AdminPage() {
           </div>
         )
       )}
-      {tab === 'legal' && <LegalPagesAdmin />}
+      {tab === 'legal' && (adminLegalSlug ? <LegalPage slug={adminLegalSlug} onBack={() => setAdminLegalSlug(null)} /> : <LegalPagesAdmin onView={(slug) => setAdminLegalSlug(slug)} />)}
 
       {tab === 'kyc' && (
         <div>
