@@ -119,8 +119,10 @@ export default function AdminPage() {
                   <button onClick={() => verify.mutate({ id: doc.doctor_id, action: 'reject' })} style={{ flex: 1, padding: '9px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--error)', background: 'var(--error-light)', color: 'var(--error)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                     ✕ Reject
                   </button>
-                  <button onClick={() => verify.mutate({ id: doc.doctor_id, action: 'verify' })} style={{ flex: 2, padding: '9px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--primary)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                    ✓ Verify practitioner
+                  <button onClick={() => {
+                    alert('⚠️ Please review documents in the KYC Docs tab before verifying. Go to KYC Docs tab → view all 3 required documents → click Approve.');
+                  }} style={{ flex: 2, padding: '9px', borderRadius: 'var(--r-md)', border: 'none', background: '#9CA3AF', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'not-allowed' }}>
+                    ⚠️ Review KYC Docs First
                   </button>
                 </div>
               </div>
