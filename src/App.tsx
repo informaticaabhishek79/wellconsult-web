@@ -157,13 +157,6 @@ function AppContent() {
       return <WritePrescriptionPage appointmentId={writePrescription.appointmentId} patientName={writePrescription.patientName} onDone={() => setWritePrescription(null)} />;
     }
 
-    if (legalSlug) {
-      return <LegalPage slug={legalSlug} onBack={() => { setLegalSlug(null); setShowLegalList(true); }} />;
-    }
-    if (showLegalList) {
-      return <LegalPagesPublic onView={(slug) => { setShowLegalList(false); setLegalSlug(slug); }} />;
-    }
-
     if (videoCall) {
       return <VideoCallPage appointmentId={videoCall.id} doctorName={videoCall.doctorName} patientName={videoCall.patientName} onClose={() => setVideoCall(null)} />;
     }
@@ -194,8 +187,7 @@ function AppContent() {
       case '/records':       return <MedicalRecordsPage />;
       case '/history':       return <MedicalHistoryPage />;
         case '/profile':      return <ProfilePage />;
-      case '/legal':        return <LegalPagesPublic onView={(slug) => setLegalSlug(slug)} />;
-      case '/legal':        return <LegalPagesPublic onView={(slug) => setLegalSlug(slug)} />;
+      case '/legal':        return legalSlug ? <LegalPage slug={legalSlug} onBack={() => setLegalSlug(null)} /> : <LegalPagesPublic onView={(slug) => setLegalSlug(slug)} />;
         default:              return <DoctorDashboard onNav={onNav} />;
       }
     }
