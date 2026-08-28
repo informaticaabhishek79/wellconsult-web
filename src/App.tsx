@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from './store';
 import { api } from './api';
@@ -30,6 +30,38 @@ interface NavState { path: string; state?: any; }
 
 function AppContent() {
   const { user } = useAuth();
+
+  // Handle Google OAuth callback at App level
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthCode = params.get('oauth_code');
+    const oauthError = params.get('oauth_error');
+
+    if (oauthError) {
+      console.error('OAuth error:', oauthError);
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    if (oauthCode) {
+      window.history.replaceState({}, '', window.location.pathname);
+      fetch('https://wellconsult-backend.onrender.com/api/v1/auth/google/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: oauthCode }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success && data.data) {
+            localStorage.setItem('access_token', data.data.accessToken);
+            localStorage.setItem('refresh_token', data.data.refreshToken);
+            localStorage.setItem('wc_user', JSON.stringify(data.data.user));
+            useAuth.getState().init();
+          }
+        })
+        .catch(err => console.error('OAuth token exchange failed:', err));
+    }
+  }, []);
   const getInitialPath = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const page = urlParams.get('page');

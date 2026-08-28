@@ -83,34 +83,9 @@ export default function AuthPage() {
     console.log('[OAuth] href:', window.location.href);
     const params = new URLSearchParams(window.location.search);
 
-    // Handle Google OAuth callback
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-    const userParam = params.get('user');
     const oauthError = params.get('oauth_error');
 
-    // Handle Google OAuth session code
-    const oauthCode = params.get('oauth_code');
-    if (oauthCode) {
-      window.history.replaceState({}, '', window.location.pathname);
-      // Exchange code for tokens
-      fetch('https://wellconsult-backend.onrender.com/api/v1/auth/google/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: oauthCode }),
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success && data.data) {
-            localStorage.setItem('access_token', data.data.accessToken);
-            localStorage.setItem('refresh_token', data.data.refreshToken);
-            localStorage.setItem('wc_user', JSON.stringify(data.data.user));
-            useAuth.getState().init();
-          }
-        })
-        .catch(() => setError('Google sign-in failed. Please try again.'));
-      return;
-    }
+    // OAuth handled in App.tsx
 
     if (oauthError) {
       setError('Google sign-in failed. Please try again or use email/password.');
