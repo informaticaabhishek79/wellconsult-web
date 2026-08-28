@@ -17,7 +17,7 @@ const SPECIALTY_COLORS: Record<string, string> = {
   yoga:'#EA580C', naturopathy:'#16A34A', unani:'#0369A1',
 };
 
-export default function DoctorSearch({ initial, onBook }: { initial?: { specialty?: string; q?: string }; onBook: (doctorId: string) => void }) {
+export default function DoctorSearch({ initial, onBook, onViewProfile }: { initial?: { specialty?: string; q?: string }; onBook: (doctorId: string) => void; onViewProfile?: (doctorId: string) => void }) {
   const [specialty, setSpecialty] = useState(initial?.specialty || '');
   const [search,    setSearch]    = useState(initial?.q || '');
   const [page, setPage] = useState(1);
@@ -111,6 +111,11 @@ export default function DoctorSearch({ initial, onBook }: { initial?: { specialt
                         {fee && <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{fee}</span>}
                         {fee && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 3 }}>onwards</span>}
                       </div>
+                      {onViewProfile && (
+                        <button onClick={() => onViewProfile(doc.id)} style={{ padding:'7px 12px', borderRadius:'var(--r-md)', border:`1.5px solid ${color}`, background:'#fff', color:color, fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                          👤 Profile
+                        </button>
+                      )}
                       <button onClick={() => onBook(doc.id)} style={{
                         padding: '7px 16px', borderRadius: 'var(--r-md)', border: 'none',
                         background: color, color: '#fff', fontSize: 13, fontWeight: 600,
