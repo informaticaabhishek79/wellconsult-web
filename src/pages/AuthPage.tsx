@@ -18,14 +18,26 @@ function Field({ label, type='text', placeholder, value, onChange }: {
   value: string; onChange: (v: string) => void;
 }) {
   const [focused, setFocused] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const isPassword = type === 'password';
+  const inputType = isPassword ? (showPw ? 'text' : 'password') : type;
+
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={{ display:'block', fontSize:13, fontWeight:500, color:'var(--text-primary)', marginBottom:5 }}>{label}</label>
-      <input type={type} placeholder={placeholder} value={value}
-        onChange={e => onChange(e.target.value)}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{ width:'100%', padding:'10px 14px', borderRadius:'var(--r-md)', border:`1.5px solid ${focused?'var(--primary)':'var(--border)'}`, fontSize:14, color:'var(--text-primary)', outline:'none', transition:'border-color 0.15s', background:'#fff', boxSizing:'border-box' as any }}
-      />
+      <div style={{ position:'relative' }}>
+        <input type={inputType} placeholder={placeholder} value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+          style={{ width:'100%', padding: isPassword ? '10px 44px 10px 14px' : '10px 14px', borderRadius:'var(--r-md)', border:`1.5px solid ${focused?'var(--primary)':'var(--border)'}`, fontSize:14, color:'var(--text-primary)', outline:'none', transition:'border-color 0.15s', background:'#fff', boxSizing:'border-box' as any }}
+        />
+        {isPassword && (
+          <button type="button" onClick={() => setShowPw(s => !s)}
+            style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', padding:4, color:'var(--text-muted)', fontSize:16, display:'flex', alignItems:'center' }}>
+            {showPw ? '🙈' : '👁️'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
