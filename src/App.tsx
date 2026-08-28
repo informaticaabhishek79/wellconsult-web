@@ -224,5 +224,3 @@ export default function App() {
     </QueryClientProvider>
   );
 }
-/ /   f o r c e   r e b u i l d   0 8 / 2 8 / 2 0 2 6   1 7 : 2 4 : 4 5  
- 
