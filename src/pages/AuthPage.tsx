@@ -91,13 +91,8 @@ export default function AuthPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); setLoading(true);
-    try {
-      const { data } = await api.post('/auth/login', { email, password });
-      login(data.data);
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Login failed.');
-    } finally { setLoading(false); }
+    setError('');
+    await login(email, password);
   };
 
   const handlePatientRegister = async (e: React.FormEvent) => {
