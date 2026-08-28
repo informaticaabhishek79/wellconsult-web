@@ -100,11 +100,22 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Backend handles CF API call - token never exposed to frontend
+      // Get mid values from senders AFTER setLocalDescription
+      const senders = pc.getSenders();
+      const tracks = senders
+        .filter(s => s.track)
+        .map(s => ({
+          location: 'local',
+          mid: s.getParameters().encodings?.[0]?.rid || 
+               pc.getTransceivers().find(t => t.sender === s)?.mid || null,
+          trackName: s.track!.kind,
+        }))
+        .filter(t => t.mid !== null);
+
       const { data } = await api.post(`/video/session/${appointmentId}`, {
         sdp: offer.sdp,
         type: offer.type,
-        tracks: stream.getTracks().map(t => ({ location: 'local', trackName: t.id })),
+        tracks,
       });
 
       if (data.data?.sessionDescription) {
