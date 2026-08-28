@@ -22,6 +22,7 @@ import ProfilePage from './pages/ProfilePage';
 import AskDoctorPage from './pages/AskDoctorPage';
 import MedicalHistoryPage from './pages/MedicalHistoryPage';
 import MedicalRecordsPage from './pages/MedicalRecordsPage';
+import LegalPage from './pages/LegalPage';
 import Sidebar from './components/Sidebar';
 import { useQuery } from '@tanstack/react-query';
 
@@ -93,6 +94,7 @@ function AppContent() {
   const [chatAppointment, setChatAppointment] = useState<{id:string;doctorName?:string} | null>(null);
   const [videoCall, setVideoCall] = useState<{id:string;doctorName?:string;patientName?:string} | null>(null);
   const [writePrescription, setWritePrescription] = useState<{appointmentId:string;patientName?:string} | null>(null);
+  const [legalSlug, setLegalSlug] = useState<string | null>(null);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -151,6 +153,10 @@ function AppContent() {
   const renderPage = () => {
     if (writePrescription) {
       return <WritePrescriptionPage appointmentId={writePrescription.appointmentId} patientName={writePrescription.patientName} onDone={() => setWritePrescription(null)} />;
+    }
+
+    if (legalSlug) {
+      return <LegalPage slug={legalSlug} onBack={() => setLegalSlug(null)} />;
     }
 
     if (videoCall) {
