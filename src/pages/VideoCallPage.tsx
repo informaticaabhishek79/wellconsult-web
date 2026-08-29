@@ -116,19 +116,20 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       };
 
       pullPc.ontrack = (e) => {
-        console.log('[Video] Pull ontrack:', e.track.kind, 'count:', trackCount + 1, 'ref:', !!remoteRef.current);
+        console.log('[Video] Pull ontrack:', e.track.kind, 'count:', trackCount + 1);
         remoteStream.addTrack(e.track);
         trackCount++;
         if (remoteRef.current) {
           remoteRef.current.srcObject = remoteStream;
-          remoteRef.current.play().catch(err => console.log('[Video] play err:', err.message));
         }
         if (trackCount >= 2) {
           setStatus('connected');
+          // Only play once after both tracks arrive
+          remoteRef.current?.play().catch(err => console.log('[Video] play err:', err.message));
           setTimeout(() => {
             const v = remoteRef.current;
-            console.log('[Video] video state - w:', v?.videoWidth, 'h:', v?.videoHeight, 'readyState:', v?.readyState, 'paused:', v?.paused);
-          }, 1000);
+            console.log('[Video] video state - w:', v?.videoWidth, 'h:', v?.videoHeight, 'readyState:', v?.readyState);
+          }, 2000);
         }
       };
 
@@ -211,8 +212,15 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       pc.onconnectionstatechange = () => {
         console.log('[Video] push connection state:', pc.connectionState);
-        if (pc.connectionState === 'failed') {
+        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+          console.log('[Video] Push PC disconnected, restarting ICE...');
           pc.restartIce();
+        }
+      };
+
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          console.log('[Video] push ICE candidate:', e.candidate.type);
         }
       };
 
