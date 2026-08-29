@@ -57,49 +57,74 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
     if (remoteRef.current) remoteRef.current.srcObject = null;
   };
 
-  const pullRemoteTracks = async (remoteSessionId: string) => {
+  const pullRemoteTracks = async (remoteSessionId: string, attempt = 0) => {
     const pc = pcRef.current;
     if (!pc || !sessionRef.current) return;
+    if (attempt > 10) { console.error('Max pull attempts reached'); return; }
 
     try {
-      // Get remote session tracks info
+      console.log(`[CF] Pulling tracks from session ${remoteSessionId}, attempt ${attempt}`);
+
+      // Get remote session to find track names
       const remoteSession = await cfFetch('GET', `/sessions/${remoteSessionId}`);
-      const remoteTracks = remoteSession.tracks || [];
+      console.log('[CF] Remote session:', JSON.stringify(remoteSession));
+
+      const remoteTracks = (remoteSession.tracks || []).filter((t: any) => t.location === 'local');
+      console.log('[CF] Remote tracks to pull:', JSON.stringify(remoteTracks));
 
       if (remoteTracks.length === 0) {
-        setTimeout(() => pullRemoteTracks(remoteSessionId), 2000);
+        console.log('[CF] No tracks yet, retrying in 2s...');
+        setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 2000);
         return;
       }
 
-      // Pull each remote track
-      const tracksToRequest = remoteTracks
-        .filter((t: any) => t.status === 'active' && t.location === 'remote')
-        .map((t: any) => ({ location: 'remote', sessionId: remoteSessionId, trackName: t.trackName }));
+      // Pull tracks using trackName
+      const tracksToRequest = remoteTracks.map((t: any) => ({
+        location: 'remote',
+        sessionId: remoteSessionId,
+        trackName: t.trackName,
+      }));
 
-      if (tracksToRequest.length === 0) {
-        setTimeout(() => pullRemoteTracks(remoteSessionId), 2000);
-        return;
+      // Add recvonly transceivers for each track
+      for (const t of remoteTracks) {
+        const kind = t.trackName === 'audio' ? 'audio' : 'video';
+        pc.addTransceiver(kind, { direction: 'recvonly' });
       }
 
-      // Create new offer for receiving
+      // Create new offer with recvonly transceivers
+      const newOffer = await pc.createOffer();
+      await pc.setLocalDescription(newOffer);
+
       const pullRes = await cfFetch('POST', `/sessions/${sessionRef.current}/tracks/new`, {
+        sessionDescription: { type: newOffer.type, sdp: newOffer.sdp },
         tracks: tracksToRequest,
       });
 
-      if (pullRes.requiresImmediateRenegotiation && pullRes.sessionDescription) {
+      console.log('[CF] Pull response:', JSON.stringify(pullRes));
+
+      if (pullRes.errorCode) {
+        console.error('[CF] Pull error:', pullRes.errorDescription);
+        setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 2000);
+        return;
+      }
+
+      if (pullRes.sessionDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(pullRes.sessionDescription));
+      }
+
+      if (pullRes.requiresImmediateRenegotiation) {
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-
-        await cfFetch('PUT', `/sessions/${sessionRef.current}/renegotiate`, {
+        const renego = await cfFetch('PUT', `/sessions/${sessionRef.current}/renegotiate`, {
           sessionDescription: { type: answer.type, sdp: answer.sdp },
         });
+        console.log('[CF] Renegotiation:', JSON.stringify(renego));
       }
 
       setStatus('connected');
     } catch (err) {
-      console.error('Pull remote tracks error:', err);
-      setTimeout(() => pullRemoteTracks(remoteSessionId), 3000);
+      console.error('[CF] Pull remote tracks error:', err);
+      setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 3000);
     }
   };
 
