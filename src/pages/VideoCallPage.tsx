@@ -21,16 +21,16 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
   const localRef   = useRef<HTMLVideoElement>(null);
   const remoteRef  = useRef<HTMLVideoElement>(null);
-  const pcRef      = useRef<RTCPeerConnection | null>(null); // push PC
-  const pullPcRef  = useRef<RTCPeerConnection | null>(null); // pull PC
+  const pcRef      = useRef<RTCPeerConnection | null>(null);
   const streamRef  = useRef<MediaStream | null>(null);
   const socketRef  = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const sessionRef = useRef<string>('');
+  const pulledRef  = useRef(false);
+  const remoteStreamRef = useRef<MediaStream>(new MediaStream());
   const roomId     = `video-${appointmentId.slice(0, 12)}`;
 
   useEffect(() => {
-    // Setup socket first
     const token = TokenStorage.get('access_token');
     const s = io('https://wellconsult-backend.onrender.com', {
       auth: { token }, transports: ['websocket', 'polling'],
@@ -39,27 +39,16 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
     s.on('message_history', (msgs: any[]) => setMessages(msgs));
     s.on('new_message', (msg: any) => setMessages(prev => [...prev, msg]));
-
     s.on('peer_joined_video', (data: { sessionId: string; userId: string }) => {
-      console.log('[Video] peer_joined_video', data);
-      if (data.userId !== user?.id && data.sessionId) {
-        pullRemoteTracks(data.sessionId);
-      }
+      if (data.userId !== user?.id && data.sessionId) pullRemoteTracks(data.sessionId);
     });
-
     s.on('video_room_peers', (peers: { sessionId: string; userId: string }[]) => {
-      console.log('[Video] video_room_peers', JSON.stringify(peers));
       const other = peers.find(p => p.userId !== user?.id);
-      if (other?.sessionId) {
-        pullRemoteTracks(other.sessionId);
-      } else {
-        setStatus('waiting');
-      }
+      if (other?.sessionId) pullRemoteTracks(other.sessionId);
+      else setStatus('waiting');
     });
 
-    // Start call after socket is set up
     startCall(s);
-
     return () => { cleanup(); s.disconnect(); };
   }, []);
 
@@ -69,29 +58,20 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
     streamRef.current?.getTracks().forEach(t => { t.stop(); t.enabled = false; });
     streamRef.current = null;
     pcRef.current?.close(); pcRef.current = null;
-    pullPcRef.current?.close(); pullPcRef.current = null;
     if (localRef.current) localRef.current.srcObject = null;
     if (remoteRef.current) remoteRef.current.srcObject = null;
   };
 
-  const pulledRef = useRef(false);
-
   const pullRemoteTracks = async (remoteSessionId: string, attempt = 0) => {
-    if (!sessionRef.current) return;
-    if (attempt > 8) return;
-    if (pulledRef.current) return;
+    if (!sessionRef.current || attempt > 8 || pulledRef.current) return;
+    const pc = pcRef.current;
+    if (!pc) return;
 
     try {
-      // Get remote tracks via backend
       const { data: pullResp } = await api.post(`/video/session/${appointmentId}/pull`, {
-        sessionId: sessionRef.current,
-        remoteSessionId,
+        sessionId: sessionRef.current, remoteSessionId,
       });
-
-      const pullData = pullResp.data || pullResp;
-      const remoteTracks = pullData.remoteTracks || [];
-      console.log('[Video] Remote tracks:', JSON.stringify(remoteTracks));
-
+      const remoteTracks = (pullResp.data || pullResp).remoteTracks || [];
       if (remoteTracks.length === 0) {
         setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 2000);
         return;
@@ -99,82 +79,42 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       pulledRef.current = true;
 
-      // Create a SEPARATE PeerConnection just for receiving
-      const pullPc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }],
-        bundlePolicy: 'max-bundle',
-      });
-      pullPcRef.current = pullPc;
-
-      const remoteStream = new MediaStream();
-      let trackCount = 0;
-      pullPc.oniceconnectionstatechange = () => {
-        console.log('[Video] pull ICE state:', pullPc.iceConnectionState);
-      };
-      pullPc.onconnectionstatechange = () => {
-        console.log('[Video] pull connection state:', pullPc.connectionState);
-      };
-
-      pullPc.ontrack = (e) => {
-        console.log('[Video] Pull ontrack:', e.track.kind, 'count:', trackCount + 1);
-        remoteStream.addTrack(e.track);
-        trackCount++;
-        if (remoteRef.current) {
-          remoteRef.current.srcObject = remoteStream;
-        }
-        if (trackCount >= 2) {
-          setStatus('connected');
-          // Only play once after both tracks arrive
-          remoteRef.current?.play().catch(err => console.log('[Video] play err:', err.message));
-          setTimeout(() => {
-            const v = remoteRef.current;
-            console.log('[Video] video state - w:', v?.videoWidth, 'h:', v?.videoHeight, 'readyState:', v?.readyState);
-          }, 2000);
-        }
-      };
-
-      // Add recvonly transceivers
+      // Add recvonly transceivers to the SAME PC
       for (const t of remoteTracks) {
-        pullPc.addTransceiver(t.trackName === 'audio' ? 'audio' : 'video', { direction: 'recvonly' });
+        pc.addTransceiver(t.trackName === 'audio' ? 'audio' : 'video', { direction: 'recvonly' });
       }
 
-      const offer = await pullPc.createOffer();
-      await pullPc.setLocalDescription(offer);
+      // Renegotiate - create new offer with recvonly transceivers added
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
 
       const { data: pullResultResp } = await api.post(`/video/session/${appointmentId}/tracks/pull`, {
         sessionId: sessionRef.current,
         sessionDescription: { type: offer.type, sdp: offer.sdp },
         tracks: remoteTracks.map((t: any) => ({
-          location: 'remote',
-          sessionId: remoteSessionId,
-          trackName: t.trackName,
+          location: 'remote', sessionId: remoteSessionId, trackName: t.trackName,
         })),
       });
 
       const result = pullResultResp.data || pullResultResp;
-      console.log('[Video] Pull result:', result?.errorCode || 'ok', JSON.stringify(result).slice(0,200));
-
       if (result.errorCode) {
         pulledRef.current = false;
-        pullPc.close(); pullPcRef.current = null;
         setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 2000);
         return;
       }
 
       if (result.sessionDescription) {
-        await pullPc.setRemoteDescription(new RTCSessionDescription(result.sessionDescription));
+        await pc.setRemoteDescription(new RTCSessionDescription(result.sessionDescription));
       }
 
       if (result.requiresImmediateRenegotiation) {
-        const answer = await pullPc.createAnswer();
-        await pullPc.setLocalDescription(answer);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
         await api.put(`/video/session/${appointmentId}/renegotiate`, {
           sessionId: sessionRef.current,
           sessionDescription: { type: answer.type, sdp: answer.sdp },
         });
       }
-
-      setStatus('connected');
     } catch (err: any) {
       console.error('[Video] Pull error:', err.message);
       pulledRef.current = false;
@@ -190,8 +130,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       } catch (permErr: any) {
         setError(permErr.name === 'NotAllowedError' ? 'PERMISSION_DENIED' : permErr.message);
-        setStatus('error');
-        return;
+        setStatus('error'); return;
       }
       streamRef.current = stream;
       if (localRef.current) localRef.current.srcObject = stream;
@@ -202,29 +141,28 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       });
       pcRef.current = pc;
 
+      // Handle incoming remote tracks on SAME PC
       pc.ontrack = (e) => {
-        console.log('[Video] push ontrack fired', e.track.kind);
+        console.log('[Video] ontrack:', e.track.kind, 'readyState:', e.track.readyState);
+        remoteStreamRef.current.addTrack(e.track);
+        if (remoteRef.current) {
+          remoteRef.current.srcObject = remoteStreamRef.current;
+          remoteRef.current.play().catch(() => {});
+        }
+        setStatus('connected');
       };
 
       pc.oniceconnectionstatechange = () => {
-        console.log('[Video] push ICE state:', pc.iceConnectionState);
+        console.log('[Video] ICE:', pc.iceConnectionState);
+        if (pc.iceConnectionState === 'failed') pc.restartIce();
       };
 
       pc.onconnectionstatechange = () => {
-        console.log('[Video] push connection state:', pc.connectionState);
-        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-          console.log('[Video] Push PC disconnected, restarting ICE...');
-          pc.restartIce();
-        }
+        console.log('[Video] connection:', pc.connectionState);
+        if (pc.connectionState === 'failed') pc.restartIce();
       };
 
-      pc.onicecandidate = (e) => {
-        if (e.candidate) {
-          console.log('[Video] push ICE candidate:', e.candidate.type);
-        }
-      };
-
-      // Add sendonly for local tracks
+      // Add sendonly transceivers
       const sendTransceivers: RTCRtpTransceiver[] = [];
       for (const track of stream.getTracks()) {
         sendTransceivers.push(pc.addTransceiver(track, { direction: 'sendonly' }));
@@ -233,7 +171,6 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Only send the sendonly tracks to CF push
       const sendTracks = sendTransceivers
         .filter(t => t.mid !== null)
         .map(t => ({ location: 'local', mid: t.mid, trackName: t.sender.track?.kind }));
@@ -244,21 +181,17 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       const sessionData = sessionResp.data || sessionResp;
       sessionRef.current = sessionData.session_id || sessionData.sessionId;
-      console.log('[Video] CF session created:', sessionRef.current);
+      console.log('[Video] Session:', sessionRef.current);
 
       if (sessionData.sessionDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(sessionData.sessionDescription));
       }
 
-      // NOW join the video room with the session ID
       const joinRoom = () => {
-        console.log('[Video] Joining room, sessionId:', sessionRef.current);
         s.emit('join_video_room', { roomId, sessionId: sessionRef.current, userId: user?.id });
         s.emit('join_room', { appointmentId });
       };
-
-      if (s.connected) joinRoom();
-      else s.once('connect', joinRoom);
+      if (s.connected) joinRoom(); else s.once('connect', joinRoom);
 
     } catch (err: any) {
       setError(err.message || 'Failed to start video call');
