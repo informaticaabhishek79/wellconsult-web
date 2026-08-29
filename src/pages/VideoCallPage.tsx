@@ -73,10 +73,13 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
     if (remoteRef.current) remoteRef.current.srcObject = null;
   };
 
+  const pulledRef = useRef(false);
+
   const pullRemoteTracks = async (remoteSessionId: string, attempt = 0) => {
     const pc = pcRef.current;
     if (!pc || !sessionRef.current) return;
     if (attempt > 8) return;
+    if (pulledRef.current) return; // Already pulling
 
     try {
       // Get remote tracks via backend
@@ -94,7 +97,9 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         return;
       }
 
-      // Add recvonly transceivers
+      pulledRef.current = true; // Mark as pulling to prevent duplicate transceivers
+
+      // Add recvonly transceivers ONCE
       for (const t of remoteTracks) {
         pc.addTransceiver(t.trackName === 'audio' ? 'audio' : 'video', { direction: 'recvonly' });
       }
@@ -116,6 +121,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       console.log('[Video] Pull result:', result?.errorCode || 'ok');
 
       if (result.errorCode) {
+        pulledRef.current = false; // Reset so we can retry
         setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 2000);
         return;
       }
@@ -136,6 +142,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       setStatus('connected');
     } catch (err: any) {
       console.error('[Video] Pull error:', err.message);
+      pulledRef.current = false;
       setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 3000);
     }
   };
