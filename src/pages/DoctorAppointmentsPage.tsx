@@ -85,7 +85,7 @@ export default function DoctorAppointmentsPage({ onChat, onVideo, onWritePrescri
 
   const handleConfirm = async (appt: any) => {
     try {
-      await api.patch(`/appointments/${appt.id}/confirm`);
+      await api.patch(`/doctors/me/appointments/${appt.id}/confirm`);
       await refetch();
     } catch (err: any) {
       alert(err.response?.data?.error?.message || 'Could not confirm.');
