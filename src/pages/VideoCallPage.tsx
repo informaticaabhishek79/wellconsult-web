@@ -21,7 +21,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
   const localRef   = useRef<HTMLVideoElement>(null);
   const remoteRef  = useRef<HTMLVideoElement>(null);
-  const pcRef      = useRef<RTCPeerConnection | null>(null);
+  const pcRef      = useRef<RTCPeerConnection | null>(null); // push PC
+  const pullPcRef  = useRef<RTCPeerConnection | null>(null); // pull PC
   const streamRef  = useRef<MediaStream | null>(null);
   const socketRef  = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -67,8 +68,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const cleanup = () => {
     streamRef.current?.getTracks().forEach(t => { t.stop(); t.enabled = false; });
     streamRef.current = null;
-    pcRef.current?.close();
-    pcRef.current = null;
+    pcRef.current?.close(); pcRef.current = null;
+    pullPcRef.current?.close(); pullPcRef.current = null;
     if (localRef.current) localRef.current.srcObject = null;
     if (remoteRef.current) remoteRef.current.srcObject = null;
   };
@@ -76,10 +77,9 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const pulledRef = useRef(false);
 
   const pullRemoteTracks = async (remoteSessionId: string, attempt = 0) => {
-    const pc = pcRef.current;
-    if (!pc || !sessionRef.current) return;
+    if (!sessionRef.current) return;
     if (attempt > 8) return;
-    if (pulledRef.current) return; // Already pulling
+    if (pulledRef.current) return;
 
     try {
       // Get remote tracks via backend
@@ -99,9 +99,28 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       pulledRef.current = true;
 
-      // Transceivers already added in startCall - just create offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+      // Create a SEPARATE PeerConnection just for receiving
+      const pullPc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }],
+        bundlePolicy: 'max-bundle',
+      });
+      pullPcRef.current = pullPc;
+
+      pullPc.ontrack = (e) => {
+        console.log('[Video] Pull ontrack:', e.track.kind);
+        if (remoteRef.current && e.streams[0]) {
+          remoteRef.current.srcObject = e.streams[0];
+          setStatus('connected');
+        }
+      };
+
+      // Add recvonly transceivers
+      for (const t of remoteTracks) {
+        pullPc.addTransceiver(t.trackName === 'audio' ? 'audio' : 'video', { direction: 'recvonly' });
+      }
+
+      const offer = await pullPc.createOffer();
+      await pullPc.setLocalDescription(offer);
 
       const { data: pullResultResp } = await api.post(`/video/session/${appointmentId}/tracks/pull`, {
         sessionId: sessionRef.current,
@@ -114,21 +133,22 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       });
 
       const result = pullResultResp.data || pullResultResp;
-      console.log('[Video] Pull result:', result?.errorCode || 'ok');
+      console.log('[Video] Pull result:', result?.errorCode || 'ok', JSON.stringify(result).slice(0,200));
 
       if (result.errorCode) {
-        pulledRef.current = false; // Reset so we can retry
+        pulledRef.current = false;
+        pullPc.close(); pullPcRef.current = null;
         setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 2000);
         return;
       }
 
       if (result.sessionDescription) {
-        await pc.setRemoteDescription(new RTCSessionDescription(result.sessionDescription));
+        await pullPc.setRemoteDescription(new RTCSessionDescription(result.sessionDescription));
       }
 
       if (result.requiresImmediateRenegotiation) {
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
+        const answer = await pullPc.createAnswer();
+        await pullPc.setLocalDescription(answer);
         await api.put(`/video/session/${appointmentId}/renegotiate`, {
           sessionId: sessionRef.current,
           sessionDescription: { type: answer.type, sdp: answer.sdp },
@@ -176,10 +196,6 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       for (const track of stream.getTracks()) {
         sendTransceivers.push(pc.addTransceiver(track, { direction: 'sendonly' }));
       }
-
-      // Add recvonly for remote tracks upfront (mid 2=audio, 3=video from remote)
-      pc.addTransceiver('audio', { direction: 'recvonly' });
-      pc.addTransceiver('video', { direction: 'recvonly' });
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
