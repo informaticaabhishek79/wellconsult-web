@@ -4,18 +4,7 @@ import { api } from '../api';
 import { io } from 'socket.io-client';
 import { TokenStorage } from '../api';
 
-const CF_APP_ID = 'b5c628780338d61f23ed3e8f952e44b8';
-const CF_TOKEN  = '31d7096a8a858ca1861d0907c0199e822906fc5d89fe650b6c85827a075e2d31';
-const CF_BASE   = `https://rtc.live.cloudflare.com/v1/apps/${CF_APP_ID}`;
-
-async function cfFetch(method: string, path: string, body?: any) {
-  const res = await fetch(`${CF_BASE}${path}`, {
-    method,
-    headers: { 'Authorization': `Bearer ${CF_TOKEN}`, 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  return res.json();
-}
+// CF calls go through backend to keep token secure
 
 export default function VideoCallPage({ appointmentId, doctorName, patientName, onClose }: {
   appointmentId: string;
@@ -63,67 +52,68 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
     if (attempt > 10) { console.error('Max pull attempts reached'); return; }
 
     try {
-      console.log(`[CF] Pulling tracks from session ${remoteSessionId}, attempt ${attempt}`);
+      console.log(`[Video] Pulling tracks from ${remoteSessionId}, attempt ${attempt}`);
 
-      // Get remote session to find track names
-      const remoteSession = await cfFetch('GET', `/sessions/${remoteSessionId}`);
-      console.log('[CF] Remote session:', JSON.stringify(remoteSession));
+      // Get remote tracks via backend
+      const { data: pullData } = await api.post(`/video/session/${appointmentId}/pull`, {
+        sessionId: sessionRef.current,
+        remoteSessionId,
+      });
 
-      const remoteTracks = (remoteSession.tracks || []).filter((t: any) => t.location === 'local');
-      console.log('[CF] Remote tracks to pull:', JSON.stringify(remoteTracks));
+      const remoteTracks = pullData.remoteTracks || [];
+      console.log('[Video] Remote tracks:', JSON.stringify(remoteTracks));
 
       if (remoteTracks.length === 0) {
-        console.log('[CF] No tracks yet, retrying in 2s...');
         setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 2000);
         return;
       }
 
-      // Pull tracks using trackName
+      // Add recvonly transceivers
+      for (const t of remoteTracks) {
+        const kind = t.trackName === 'audio' ? 'audio' : 'video';
+        pc.addTransceiver(kind, { direction: 'recvonly' });
+      }
+
+      // Create offer for pulling
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
       const tracksToRequest = remoteTracks.map((t: any) => ({
         location: 'remote',
         sessionId: remoteSessionId,
         trackName: t.trackName,
       }));
 
-      // Add recvonly transceivers for each track
-      for (const t of remoteTracks) {
-        const kind = t.trackName === 'audio' ? 'audio' : 'video';
-        pc.addTransceiver(kind, { direction: 'recvonly' });
-      }
-
-      // Create new offer with recvonly transceivers
-      const newOffer = await pc.createOffer();
-      await pc.setLocalDescription(newOffer);
-
-      const pullRes = await cfFetch('POST', `/sessions/${sessionRef.current}/tracks/new`, {
-        sessionDescription: { type: newOffer.type, sdp: newOffer.sdp },
+      // Pull tracks via backend
+      const { data: result } = await api.post(`/video/session/${appointmentId}/tracks/pull`, {
+        sessionId: sessionRef.current,
+        sessionDescription: { type: offer.type, sdp: offer.sdp },
         tracks: tracksToRequest,
       });
 
-      console.log('[CF] Pull response:', JSON.stringify(pullRes));
+      console.log('[Video] Pull result:', JSON.stringify(result));
 
-      if (pullRes.errorCode) {
-        console.error('[CF] Pull error:', pullRes.errorDescription);
+      if (result.errorCode) {
         setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 2000);
         return;
       }
 
-      if (pullRes.sessionDescription) {
-        await pc.setRemoteDescription(new RTCSessionDescription(pullRes.sessionDescription));
+      if (result.sessionDescription) {
+        await pc.setRemoteDescription(new RTCSessionDescription(result.sessionDescription));
       }
 
-      if (pullRes.requiresImmediateRenegotiation) {
+      if (result.requiresImmediateRenegotiation) {
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        const renego = await cfFetch('PUT', `/sessions/${sessionRef.current}/renegotiate`, {
+        await api.put(`/video/session/${appointmentId}/renegotiate`, {
+          sessionId: sessionRef.current,
           sessionDescription: { type: answer.type, sdp: answer.sdp },
         });
-        console.log('[CF] Renegotiation:', JSON.stringify(renego));
       }
 
       setStatus('connected');
-    } catch (err) {
-      console.error('[CF] Pull remote tracks error:', err);
+    } catch (err: any) {
+      console.error('[Video] Pull error:', err.message);
       setTimeout(() => pullRemoteTracks(remoteSessionId, attempt + 1), 3000);
     }
   };
@@ -167,21 +157,21 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Create CF session and push tracks
-      const session = await cfFetch('POST', '/sessions/new');
-      sessionRef.current = session.sessionId;
-
+      // Create CF session via backend
       const sendTracks = sendTransceivers
         .filter(t => t.mid !== null)
         .map(t => ({ location: 'local', mid: t.mid, trackName: t.sender.track?.kind }));
 
-      const pushRes = await cfFetch('POST', `/sessions/${session.sessionId}/tracks/new`, {
-        sessionDescription: { type: offer.type, sdp: offer.sdp },
+      const { data: sessionData } = await api.post(`/video/session/${appointmentId}`, {
+        sdp: offer.sdp,
+        type: offer.type,
         tracks: sendTracks,
       });
 
-      if (pushRes.sessionDescription) {
-        await pc.setRemoteDescription(new RTCSessionDescription(pushRes.sessionDescription));
+      sessionRef.current = sessionData.sessionId;
+
+      if (sessionData.sessionDescription) {
+        await pc.setRemoteDescription(new RTCSessionDescription(sessionData.sessionDescription));
       }
 
       // Connect to Socket.io for signaling
