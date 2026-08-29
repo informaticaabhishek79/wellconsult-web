@@ -181,14 +181,9 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       });
       socketRef.current = s;
 
-      s.on('connect', () => {
-        // Join video room and share session ID (sessionRef.current is set by now)
-        s.emit('join_video_room', { roomId, sessionId: sessionRef.current, userId: user?.id });
-        s.emit('join_room', { appointmentId });
-      });
-
       // When other peer joins, pull their tracks
       s.on('peer_joined_video', (data: { sessionId: string; userId: string }) => {
+        console.log('[Video] Peer joined:', data);
         if (data.userId !== user?.id && data.sessionId) {
           setStatus('connected');
           pullRemoteTracks(data.sessionId);
@@ -197,6 +192,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       // When we join, get existing peers
       s.on('video_room_peers', (peers: { sessionId: string; userId: string }[]) => {
+        console.log('[Video] Room peers:', JSON.stringify(peers));
         const otherPeer = peers.find(p => p.userId !== user?.id);
         if (otherPeer?.sessionId) {
           setStatus('connected');
@@ -208,6 +204,19 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       s.on('message_history', (msgs: any[]) => setMessages(msgs));
       s.on('new_message', (msg: any) => setMessages(prev => [...prev, msg]));
+
+      // Join video room AFTER session is ready
+      const joinVideoRoom = () => {
+        console.log('[Video] Joining room with sessionId:', sessionRef.current);
+        s.emit('join_video_room', { roomId, sessionId: sessionRef.current, userId: user?.id });
+        s.emit('join_room', { appointmentId });
+      };
+
+      if (s.connected) {
+        joinVideoRoom();
+      } else {
+        s.on('connect', joinVideoRoom);
+      }
 
     } catch (err: any) {
       setError(err.message || 'Failed to start video call');
