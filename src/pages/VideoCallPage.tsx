@@ -208,6 +208,9 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       pc.onconnectionstatechange = () => {
         console.log('[Video] push connection state:', pc.connectionState);
+        if (pc.connectionState === 'failed') {
+          pc.restartIce();
+        }
       };
 
       // Add sendonly for local tracks
