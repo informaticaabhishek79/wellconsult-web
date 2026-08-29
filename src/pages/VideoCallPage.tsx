@@ -106,10 +106,12 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       });
       pullPcRef.current = pullPc;
 
+      const remoteStream = new MediaStream();
       pullPc.ontrack = (e) => {
-        console.log('[Video] Pull ontrack:', e.track.kind);
-        if (remoteRef.current && e.streams[0]) {
-          remoteRef.current.srcObject = e.streams[0];
+        console.log('[Video] Pull ontrack:', e.track.kind, 'streams:', e.streams.length);
+        remoteStream.addTrack(e.track);
+        if (remoteRef.current) {
+          remoteRef.current.srcObject = remoteStream;
           setStatus('connected');
         }
       };
