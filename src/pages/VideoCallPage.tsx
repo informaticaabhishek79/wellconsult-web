@@ -182,8 +182,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       socketRef.current = s;
 
       s.on('connect', () => {
-        // Join video room and share session ID
-        s.emit('join_video_room', { roomId, sessionId: session.sessionId, userId: user?.id });
+        // Join video room and share session ID (sessionRef.current is set by now)
+        s.emit('join_video_room', { roomId, sessionId: sessionRef.current, userId: user?.id });
         s.emit('join_room', { appointmentId });
       });
 
