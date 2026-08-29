@@ -108,6 +108,13 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       const remoteStream = new MediaStream();
       let trackCount = 0;
+      pullPc.oniceconnectionstatechange = () => {
+        console.log('[Video] pull ICE state:', pullPc.iceConnectionState);
+      };
+      pullPc.onconnectionstatechange = () => {
+        console.log('[Video] pull connection state:', pullPc.connectionState);
+      };
+
       pullPc.ontrack = (e) => {
         console.log('[Video] Pull ontrack:', e.track.kind);
         remoteStream.addTrack(e.track);
@@ -192,11 +199,15 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       pcRef.current = pc;
 
       pc.ontrack = (e) => {
-        console.log('[Video] ontrack fired', e.track.kind, e.streams.length);
-        if (remoteRef.current && e.streams[0]) {
-          remoteRef.current.srcObject = e.streams[0];
-          setStatus('connected');
-        }
+        console.log('[Video] push ontrack fired', e.track.kind);
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        console.log('[Video] push ICE state:', pc.iceConnectionState);
+      };
+
+      pc.onconnectionstatechange = () => {
+        console.log('[Video] push connection state:', pc.connectionState);
       };
 
       // Add sendonly for local tracks
