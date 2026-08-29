@@ -79,12 +79,16 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       pulledRef.current = true;
 
-      // Add recvonly transceivers to the SAME PC
-      for (const t of remoteTracks) {
-        pc.addTransceiver(t.trackName === 'audio' ? 'audio' : 'video', { direction: 'recvonly' });
+      // Change existing sendonly transceivers to sendrecv to receive remote tracks
+      // This avoids creating new mids
+      const transceivers = pc.getTransceivers();
+      for (const t of transceivers) {
+        if (t.direction === 'sendonly') {
+          t.direction = 'sendrecv';
+        }
       }
 
-      // Renegotiate - create new offer with recvonly transceivers added
+      // Renegotiate with updated directions
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
