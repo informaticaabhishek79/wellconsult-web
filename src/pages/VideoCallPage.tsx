@@ -184,8 +184,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       });
 
       const sessionData = sessionResp.data || sessionResp;
-      sessionRef.current = sessionData.sessionId;
-      console.log('[Video] CF session created:', sessionData.sessionId, 'full resp:', JSON.stringify(sessionResp).slice(0,200));
+      sessionRef.current = sessionData.session_id || sessionData.sessionId;
+      console.log('[Video] CF session created:', sessionRef.current, 'full resp:', JSON.stringify(sessionResp).slice(0,200));
 
       if (sessionData.sessionDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(sessionData.sessionDescription));
