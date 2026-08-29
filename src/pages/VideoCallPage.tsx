@@ -4,6 +4,19 @@ import { api } from '../api';
 import { io } from 'socket.io-client';
 import { TokenStorage } from '../api';
 
+const CF_APP_ID = 'b5c628780338d61f23ed3e8f952e44b8';
+const CF_TOKEN  = '31d7096a8a858ca1861d0907c0199e822906fc5d89fe650b6c85827a075e2d31';
+const CF_BASE   = `https://rtc.live.cloudflare.com/v1/apps/${CF_APP_ID}`;
+
+async function cfFetch(method: string, path: string, body?: any) {
+  const res = await fetch(`${CF_BASE}${path}`, {
+    method,
+    headers: { 'Authorization': `Bearer ${CF_TOKEN}`, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res.json();
+}
+
 export default function VideoCallPage({ appointmentId, doctorName, patientName, onClose }: {
   appointmentId: string;
   doctorName?: string;
@@ -11,7 +24,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   onClose: () => void;
 }) {
   const { user } = useAuth();
-  const [status, setStatus]         = useState<'connecting'|'connected'|'error'>('connecting');
+  const [status, setStatus]         = useState<'connecting'|'waiting'|'connected'|'error'>('connecting');
   const [error, setError]           = useState('');
   const [isMuted, setIsMuted]       = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -19,67 +32,93 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const [messages, setMessages]     = useState<any[]>([]);
   const [chatInput, setChatInput]   = useState('');
 
-  const localRef   = useRef<HTMLVideoElement>(null);
-  const remoteRef  = useRef<HTMLVideoElement>(null);
-  const pcRef      = useRef<RTCPeerConnection | null>(null);
-  const streamRef  = useRef<MediaStream | null>(null);
-  const socketRef  = useRef<any>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const localRef    = useRef<HTMLVideoElement>(null);
+  const remoteRef   = useRef<HTMLVideoElement>(null);
+  const pcRef       = useRef<RTCPeerConnection | null>(null);
+  const streamRef   = useRef<MediaStream | null>(null);
+  const socketRef   = useRef<any>(null);
+  const chatEndRef  = useRef<HTMLDivElement>(null);
+  const sessionRef  = useRef<string>('');
+  const roomId      = `video-${appointmentId.slice(0, 12)}`;
 
   useEffect(() => {
     startCall();
-    const token = TokenStorage.get('access_token');
-    if (token) {
-      const s = io('https://wellconsult-backend.onrender.com', {
-        auth: { token }, transports: ['websocket', 'polling'],
-      });
-      s.on('connect', () => s.emit('join_room', { appointmentId }));
-      s.on('message_history', (msgs: any[]) => setMessages(msgs));
-      s.on('new_message', (msg: any) => setMessages(prev => [...prev, msg]));
-      socketRef.current = s;
-    }
     return () => { cleanup(); socketRef.current?.disconnect(); };
   }, []);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const cleanup = () => {
-    // Stop all tracks immediately to turn off camera/mic indicator
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => {
-        t.stop();
-        t.enabled = false;
-      });
-      streamRef.current = null;
-    }
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-    // Clear video elements
+    streamRef.current?.getTracks().forEach(t => { t.stop(); t.enabled = false; });
+    streamRef.current = null;
+    pcRef.current?.close();
+    pcRef.current = null;
     if (localRef.current) localRef.current.srcObject = null;
     if (remoteRef.current) remoteRef.current.srcObject = null;
+  };
+
+  const pullRemoteTracks = async (remoteSessionId: string) => {
+    const pc = pcRef.current;
+    if (!pc || !sessionRef.current) return;
+
+    try {
+      // Get remote session tracks info
+      const remoteSession = await cfFetch('GET', `/sessions/${remoteSessionId}`);
+      const remoteTracks = remoteSession.tracks || [];
+
+      if (remoteTracks.length === 0) {
+        setTimeout(() => pullRemoteTracks(remoteSessionId), 2000);
+        return;
+      }
+
+      // Pull each remote track
+      const tracksToRequest = remoteTracks
+        .filter((t: any) => t.status === 'active' && t.location === 'remote')
+        .map((t: any) => ({ location: 'remote', sessionId: remoteSessionId, trackName: t.trackName }));
+
+      if (tracksToRequest.length === 0) {
+        setTimeout(() => pullRemoteTracks(remoteSessionId), 2000);
+        return;
+      }
+
+      // Create new offer for receiving
+      const pullRes = await cfFetch('POST', `/sessions/${sessionRef.current}/tracks/new`, {
+        tracks: tracksToRequest,
+      });
+
+      if (pullRes.requiresImmediateRenegotiation && pullRes.sessionDescription) {
+        await pc.setRemoteDescription(new RTCSessionDescription(pullRes.sessionDescription));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        await cfFetch('PUT', `/sessions/${sessionRef.current}/renegotiate`, {
+          sessionDescription: { type: answer.type, sdp: answer.sdp },
+        });
+      }
+
+      setStatus('connected');
+    } catch (err) {
+      console.error('Pull remote tracks error:', err);
+      setTimeout(() => pullRemoteTracks(remoteSessionId), 3000);
+    }
   };
 
   const startCall = async () => {
     setStatus('connecting'); setError('');
     try {
+      // Get camera/mic
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       } catch (permErr: any) {
-        const isDenied = permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError';
-        if (isDenied) {
-          setError('PERMISSION_DENIED');
-        } else {
-          setError(permErr.message || 'Could not access camera/microphone.');
-        }
+        setError(permErr.name === 'NotAllowedError' ? 'PERMISSION_DENIED' : permErr.message);
         setStatus('error');
         return;
       }
       streamRef.current = stream;
       if (localRef.current) localRef.current.srcObject = stream;
 
+      // Create RTCPeerConnection
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }],
         bundlePolicy: 'max-bundle',
@@ -93,33 +132,68 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         }
       };
 
-      // Step 1: Push local tracks to Cloudflare (sendonly)
+      // Add send-only transceivers
       const sendTransceivers: RTCRtpTransceiver[] = [];
       for (const track of stream.getTracks()) {
         sendTransceivers.push(pc.addTransceiver(track, { direction: 'sendonly' }));
       }
 
-      const offer1 = await pc.createOffer();
-      await pc.setLocalDescription(offer1);
+      // Create offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      // Create CF session and push tracks
+      const session = await cfFetch('POST', '/sessions/new');
+      sessionRef.current = session.sessionId;
 
       const sendTracks = sendTransceivers
         .filter(t => t.mid !== null)
         .map(t => ({ location: 'local', mid: t.mid, trackName: t.sender.track?.kind }));
 
-      // Get session from backend (which calls Cloudflare)
-      const { data } = await api.post(`/video/session/${appointmentId}`, {
-        sdp: pc.localDescription?.sdp,
-        type: pc.localDescription?.type,
+      const pushRes = await cfFetch('POST', `/sessions/${session.sessionId}/tracks/new`, {
+        sessionDescription: { type: offer.type, sdp: offer.sdp },
         tracks: sendTracks,
       });
 
-      if (!data.data?.sessionDescription) throw new Error('No SDP answer from Cloudflare');
+      if (pushRes.sessionDescription) {
+        await pc.setRemoteDescription(new RTCSessionDescription(pushRes.sessionDescription));
+      }
 
-      // Set remote answer for send tracks
-      await pc.setRemoteDescription(new RTCSessionDescription(data.data.sessionDescription));
+      // Connect to Socket.io for signaling
+      const token = TokenStorage.get('access_token');
+      const s = io('https://wellconsult-backend.onrender.com', {
+        auth: { token }, transports: ['websocket', 'polling'],
+      });
+      socketRef.current = s;
 
-      setStatus('connected');
-      setTimeout(() => setStatus(s => s === 'connecting' ? 'connected' : s), 2000);
+      s.on('connect', () => {
+        // Join video room and share session ID
+        s.emit('join_video_room', { roomId, sessionId: session.sessionId, userId: user?.id });
+        s.emit('join_room', { appointmentId });
+      });
+
+      // When other peer joins, pull their tracks
+      s.on('peer_joined_video', (data: { sessionId: string; userId: string }) => {
+        if (data.userId !== user?.id && data.sessionId) {
+          setStatus('connected');
+          pullRemoteTracks(data.sessionId);
+        }
+      });
+
+      // When we join, get existing peers
+      s.on('video_room_peers', (peers: { sessionId: string; userId: string }[]) => {
+        const otherPeer = peers.find(p => p.userId !== user?.id);
+        if (otherPeer?.sessionId) {
+          setStatus('connected');
+          pullRemoteTracks(otherPeer.sessionId);
+        } else {
+          setStatus('waiting');
+        }
+      });
+
+      s.on('message_history', (msgs: any[]) => setMessages(msgs));
+      s.on('new_message', (msg: any) => setMessages(prev => [...prev, msg]));
+
     } catch (err: any) {
       setError(err.message || 'Failed to start video call');
       setStatus('error');
@@ -146,56 +220,58 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:'#0f0f1a', fontFamily:'var(--font-body)' }}>
+      {/* Header */}
       <div style={{ padding:'10px 20px', background:'#16213e', display:'flex', alignItems:'center', gap:14, flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
         <button onClick={() => { cleanup(); setTimeout(onClose, 100); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', width:34, height:34, borderRadius:'50%', cursor:'pointer', fontSize:16 }}>←</button>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:14, fontWeight:600, color:'#fff' }}>📹 Video Consultation</div>
           <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginTop:1 }}>
-            {status==='connecting' ? 'Connecting...' : status==='connected' ? `with ${otherName}` : 'Connection failed'}
+            {status==='connecting' ? 'Connecting...' : status==='waiting' ? `Waiting for ${otherName} to join...` : status==='connected' ? `with ${otherName}` : 'Connection failed'}
           </div>
         </div>
-        <div style={{ width:8, height:8, borderRadius:'50%', background: status==='connected'?'#22C55E':status==='error'?'#EF4444':'#F59E0B' }}/>
+        <div style={{ width:8, height:8, borderRadius:'50%', background: status==='connected'?'#22C55E':status==='waiting'?'#F59E0B':status==='error'?'#EF4444':'#F59E0B' }}/>
         <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', padding:'3px 10px', borderRadius:20, background:'rgba(255,255,255,0.06)' }}>🔒 Cloudflare Realtime</div>
       </div>
 
+      {/* Video + Chat */}
       <div style={{ flex:1, display:'flex', overflow:'hidden', minHeight:0 }}>
         <div style={{ flex:1, minWidth:0, position:'relative', background:'#0a0a14' }}>
           <video ref={remoteRef} autoPlay playsInline style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+
+          {/* Local PiP */}
           <div style={{ position:'absolute', bottom:16, right:16, width:160, height:120, borderRadius:12, overflow:'hidden', border:'2px solid rgba(255,255,255,0.2)', background:'#222' }}>
             <video ref={localRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', transform:'scaleX(-1)' }}/>
             {isVideoOff && <div style={{ position:'absolute', inset:0, background:'#333', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:40, height:40, borderRadius:'50%', background:'#555', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>👤</div></div>}
             <div style={{ position:'absolute', bottom:4, left:0, right:0, textAlign:'center', fontSize:10, color:'rgba(255,255,255,0.7)' }}>You</div>
           </div>
-          {status==='connecting' && (
+
+          {/* Overlays */}
+          {(status==='connecting' || status==='waiting') && (
             <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
-              <div style={{ fontSize:48 }}>📹</div>
-              <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>Connecting to {otherName}...</div>
-              <div style={{ display:'flex', gap:6 }}>{[0,1,2].map(i => <div key={i} style={{ width:8, height:8, borderRadius:'50%', background:'#0A7B6C', animation:`pulse 1.2s ${i*0.2}s ease-in-out infinite` }}/>)}</div>
+              <div style={{ fontSize:48 }}>{status==='waiting' ? '⏳' : '📹'}</div>
+              <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>
+                {status==='waiting' ? `Waiting for ${otherName} to join...` : 'Connecting...'}
+              </div>
+              <div style={{ display:'flex', gap:6 }}>
+                {[0,1,2].map(i => <div key={i} style={{ width:8, height:8, borderRadius:'50%', background:'#0A7B6C', animation:`pulse 1.2s ${i*0.2}s ease-in-out infinite` }}/>)}
+              </div>
+              {status==='waiting' && <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', maxWidth:300, textAlign:'center' }}>Share the appointment link with {otherName} to start the call</div>}
             </div>
           )}
+
           {status==='error' && (
             <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.9)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:24 }}>
               {error === 'PERMISSION_DENIED' ? (
                 <>
                   <div style={{ fontSize:56 }}>📷</div>
                   <div style={{ fontSize:18, color:'#fff', fontWeight:700 }}>Camera & Microphone Access Required</div>
-                  <div style={{ fontSize:14, color:'rgba(255,255,255,0.7)', textAlign:'center', maxWidth:400, lineHeight:1.7 }}>
-                    WellConsult needs access to your camera and microphone for video consultation.
-                  </div>
                   <div style={{ background:'rgba(255,255,255,0.1)', borderRadius:12, padding:'16px 20px', maxWidth:420, width:'100%' }}>
                     <div style={{ fontSize:13, fontWeight:700, color:'#fff', marginBottom:10 }}>How to allow access:</div>
                     <div style={{ fontSize:13, color:'rgba(255,255,255,0.7)', lineHeight:2 }}>
-                      1. Click the 🔒 lock icon in your browser address bar<br/>
-                      2. Find <strong style={{color:'#fff'}}>Camera</strong> and <strong style={{color:'#fff'}}>Microphone</strong><br/>
-                      3. Change both from <strong style={{color:'#EF4444'}}>Block</strong> to <strong style={{color:'#22C55E'}}>Allow</strong><br/>
-                      4. Click <strong style={{color:'#fff'}}>Retry</strong> below
+                      1. Click the 🔒 lock icon in your address bar<br/>
+                      2. Set <strong style={{color:'#fff'}}>Camera</strong> and <strong style={{color:'#fff'}}>Microphone</strong> to <strong style={{color:'#22C55E'}}>Allow</strong><br/>
+                      3. Click <strong style={{color:'#fff'}}>Retry</strong> below
                     </div>
-                  </div>
-                  <div style={{ display:'flex', gap:10, marginTop:4 }}>
-                    <button onClick={startCall} style={{ padding:'12px 28px', borderRadius:8, background:'#0A7B6C', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
-                      🔄 Retry after allowing
-                    </button>
-                    <button onClick={onClose} style={{ padding:'12px 20px', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'#fff', border:'none', fontSize:14, cursor:'pointer' }}>Leave</button>
                   </div>
                 </>
               ) : (
@@ -203,15 +279,17 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
                   <div style={{ fontSize:48 }}>❌</div>
                   <div style={{ fontSize:16, color:'#fff', fontWeight:600 }}>Could not connect</div>
                   <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', textAlign:'center', maxWidth:360 }}>{error}</div>
-                  <div style={{ display:'flex', gap:10, marginTop:8 }}>
-                    <button onClick={startCall} style={{ padding:'10px 20px', borderRadius:8, background:'#0A7B6C', color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>Retry</button>
-                    <button onClick={onClose} style={{ padding:'10px 20px', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'#fff', border:'none', fontSize:14, cursor:'pointer' }}>Leave</button>
-                  </div>
                 </>
               )}
+              <div style={{ display:'flex', gap:10, marginTop:8 }}>
+                <button onClick={startCall} style={{ padding:'10px 20px', borderRadius:8, background:'#0A7B6C', color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>🔄 Retry</button>
+                <button onClick={() => { cleanup(); setTimeout(onClose, 100); }} style={{ padding:'10px 20px', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'#fff', border:'none', fontSize:14, cursor:'pointer' }}>Leave</button>
+              </div>
             </div>
           )}
         </div>
+
+        {/* Chat panel */}
         {showChat && (
           <div style={{ width:280, flexShrink:0, background:'#16213e', borderLeft:'1px solid rgba(255,255,255,0.1)', display:'flex', flexDirection:'column' }}>
             <div style={{ padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -240,12 +318,14 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         )}
       </div>
 
+      {/* Controls */}
       <div style={{ padding:'14px 20px', background:'#1a1a2e', display:'flex', alignItems:'center', justifyContent:'center', gap:16, flexShrink:0 }}>
         <button onClick={() => setShowChat(s => !s)} title="Toggle chat" style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, background: showChat ? '#0A7B6C' : 'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>💬</button>
         <button onClick={toggleMute} title={isMuted?'Unmute':'Mute'} style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:20, background:isMuted?'#EF4444':'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>{isMuted?'🔇':'🎤'}</button>
         <button onClick={toggleVideo} title={isVideoOff?'Turn on camera':'Turn off camera'} style={{ width:48, height:48, borderRadius:'50%', border:'none', cursor:'pointer', fontSize:20, background:isVideoOff?'#EF4444':'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>{isVideoOff?'📵':'📹'}</button>
         <button onClick={() => { cleanup(); setTimeout(onClose, 100); }} title="End call" style={{ width:56, height:56, borderRadius:'50%', border:'none', cursor:'pointer', background:'#EF4444', fontSize:22, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(239,68,68,0.4)' }}>📵</button>
       </div>
+
       <style>{`@keyframes pulse { 0%,60%,100% { opacity:0.3; transform:scale(1); } 30% { opacity:1; transform:scale(1.3); } }`}</style>
     </div>
   );
