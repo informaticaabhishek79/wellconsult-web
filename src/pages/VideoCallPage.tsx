@@ -97,13 +97,9 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         return;
       }
 
-      pulledRef.current = true; // Mark as pulling to prevent duplicate transceivers
+      pulledRef.current = true;
 
-      // Add recvonly transceivers ONCE
-      for (const t of remoteTracks) {
-        pc.addTransceiver(t.trackName === 'audio' ? 'audio' : 'video', { direction: 'recvonly' });
-      }
-
+      // Transceivers already added in startCall - just create offer
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
@@ -168,20 +164,27 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       pcRef.current = pc;
 
       pc.ontrack = (e) => {
+        console.log('[Video] ontrack fired', e.track.kind, e.streams.length);
         if (remoteRef.current && e.streams[0]) {
           remoteRef.current.srcObject = e.streams[0];
           setStatus('connected');
         }
       };
 
+      // Add sendonly for local tracks
       const sendTransceivers: RTCRtpTransceiver[] = [];
       for (const track of stream.getTracks()) {
         sendTransceivers.push(pc.addTransceiver(track, { direction: 'sendonly' }));
       }
 
+      // Add recvonly for remote tracks upfront (mid 2=audio, 3=video from remote)
+      pc.addTransceiver('audio', { direction: 'recvonly' });
+      pc.addTransceiver('video', { direction: 'recvonly' });
+
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
+      // Only send the sendonly tracks to CF push
       const sendTracks = sendTransceivers
         .filter(t => t.mid !== null)
         .map(t => ({ location: 'local', mid: t.mid, trackName: t.sender.track?.kind }));
@@ -192,7 +195,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
       const sessionData = sessionResp.data || sessionResp;
       sessionRef.current = sessionData.session_id || sessionData.sessionId;
-      console.log('[Video] CF session created:', sessionRef.current, 'full resp:', JSON.stringify(sessionResp).slice(0,200));
+      console.log('[Video] CF session created:', sessionRef.current);
 
       if (sessionData.sessionDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(sessionData.sessionDescription));
