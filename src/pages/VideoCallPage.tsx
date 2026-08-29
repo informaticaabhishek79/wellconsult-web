@@ -80,11 +80,12 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
     try {
       // Get remote tracks via backend
-      const { data: pullData } = await api.post(`/video/session/${appointmentId}/pull`, {
+      const { data: pullResp } = await api.post(`/video/session/${appointmentId}/pull`, {
         sessionId: sessionRef.current,
         remoteSessionId,
       });
 
+      const pullData = pullResp.data || pullResp;
       const remoteTracks = pullData.remoteTracks || [];
       console.log('[Video] Remote tracks:', JSON.stringify(remoteTracks));
 
@@ -101,7 +102,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const { data: result } = await api.post(`/video/session/${appointmentId}/tracks/pull`, {
+      const { data: pullResultResp } = await api.post(`/video/session/${appointmentId}/tracks/pull`, {
         sessionId: sessionRef.current,
         sessionDescription: { type: offer.type, sdp: offer.sdp },
         tracks: remoteTracks.map((t: any) => ({
@@ -111,6 +112,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         })),
       });
 
+      const result = pullResultResp.data || pullResultResp;
       console.log('[Video] Pull result:', result?.errorCode || 'ok');
 
       if (result.errorCode) {
@@ -177,12 +179,13 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
         .filter(t => t.mid !== null)
         .map(t => ({ location: 'local', mid: t.mid, trackName: t.sender.track?.kind }));
 
-      const { data: sessionData } = await api.post(`/video/session/${appointmentId}`, {
+      const { data: sessionResp } = await api.post(`/video/session/${appointmentId}`, {
         sdp: offer.sdp, type: offer.type, tracks: sendTracks,
       });
 
+      const sessionData = sessionResp.data || sessionResp;
       sessionRef.current = sessionData.sessionId;
-      console.log('[Video] CF session created:', sessionData.sessionId);
+      console.log('[Video] CF session created:', sessionData.sessionId, 'full resp:', JSON.stringify(sessionResp).slice(0,200));
 
       if (sessionData.sessionDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(sessionData.sessionDescription));
