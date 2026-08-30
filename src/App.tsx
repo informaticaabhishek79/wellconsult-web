@@ -259,7 +259,33 @@ function AppContent() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <>
+      {incomingRequest && user?.role === 'doctor' && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, padding:16 }}>
+          <div style={{ background:'#fff', borderRadius:16, padding:28, maxWidth:420, width:'100%', boxShadow:'0 25px 50px rgba(0,0,0,0.25)', textAlign:'center' }}>
+            <div style={{ fontSize:52, marginBottom:12 }}>🔔</div>
+            <h3 style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700, marginBottom:8 }}>Instant Consultation Request</h3>
+            <p style={{ fontSize:15, color:'var(--text-secondary)', marginBottom:20 }}>
+              <strong>{incomingRequest.patientName}</strong> wants to consult with you right now
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={handleAcceptRequest}
+                style={{ width:'100%', padding:'12px', borderRadius:8, border:'none', background:'#22C55E', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer' }}>
+                ✅ Accept — Start Consultation
+              </button>
+              <button onClick={() => { const t = prompt('Suggest a time (e.g. "Today 4:00 PM"):'); handleDeclineRequest(t || undefined); }}
+                style={{ width:'100%', padding:'12px', borderRadius:8, border:'1px solid #e5e7eb', background:'#fff', color:'#374151', fontSize:14, cursor:'pointer' }}>
+                📅 Decline — Suggest Another Time
+              </button>
+              <button onClick={() => handleDeclineRequest()}
+                style={{ width:'100%', padding:'10px', borderRadius:8, border:'none', background:'#FEF2F2', color:'#DC2626', fontSize:13, cursor:'pointer' }}>
+                ❌ Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar current={bookingDoctorId ? '/doctors' : nav.path} onNav={onNav} />
       <main style={{ flex: 1, overflowY: 'auto', minHeight: '100vh' }}>
         {renderPage()}
