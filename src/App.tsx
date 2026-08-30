@@ -44,14 +44,15 @@ function AppContent() {
       presenceSocketRef.current = null;
       return;
     }
-    const token = TokenStorage.get('access_token');
+    const token = localStorage.getItem('access_token');
     if (!token) return;
-    const { io } = require('socket.io-client');
+    import('socket.io-client').then(({ io }) => {
     const s = io('https://wellconsult-backend.onrender.com', {
       auth: { token }, transports: ['websocket', 'polling'],
     });
     presenceSocketRef.current = s;
-    return () => { s.disconnect(); presenceSocketRef.current = null; };
+    }).catch(() => {});
+    return () => { presenceSocketRef.current?.disconnect(); presenceSocketRef.current = null; };
   }, [user?.id]);
 
   // Handle Google OAuth callback at App level
