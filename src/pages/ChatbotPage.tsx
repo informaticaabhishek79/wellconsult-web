@@ -96,34 +96,44 @@ export default function ChatbotPage() {
     setSpeaking(false);
   };
 
+  const pendingVoiceText = useRef('');
+
   // Voice input using Web Speech API
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) { alert('Voice input not supported in this browser. Please use Chrome.'); return; }
+    if (!SpeechRecognition) { alert('Voice input not supported. Please use Chrome.'); return; }
+    pendingVoiceText.current = '';
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
     recognition.continuous = false;
     recognition.interimResults = true;
-    recognition.onstart = () => setListening(true);
+    recognition.onstart = () => { setListening(true); console.log('[Veda] Listening started'); };
     recognition.onresult = (e: any) => {
-      const transcript = Array.from(e.results)
-        .map((r: any) => r[0].transcript)
-        .join('');
-      setInput(transcript);
-      if (e.results[e.results.length - 1].isFinal) {
-        setListening(false);
-        // Auto-send after voice input
-        setTimeout(() => {
-          const finalText = Array.from(e.results).map((r: any) => r[0].transcript).join('');
-          if (finalText.trim()) sendMessage(finalText.trim());
-        }, 300);
+      let interim = '';
+      let final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
       }
+      const current = final || interim;
+      pendingVoiceText.current = current;
+      setInput(current);
+      console.log('[Veda] Heard:', current, 'final:', !!final);
     };
     recognition.onerror = (e: any) => {
       console.log('[Veda] Speech error:', e.error);
       setListening(false);
     };
-    recognition.onend = () => setListening(false);
+    recognition.onend = () => {
+      console.log('[Veda] Listening ended, text:', pendingVoiceText.current);
+      setListening(false);
+      if (pendingVoiceText.current.trim()) {
+        const text = pendingVoiceText.current.trim();
+        pendingVoiceText.current = '';
+        setInput('');
+        setTimeout(() => sendMessage(text), 100);
+      }
+    };
     recognitionRef.current = recognition;
     recognition.start();
   };
