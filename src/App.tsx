@@ -39,19 +39,20 @@ function AppContent() {
 
   // Connect to socket for presence tracking (doctor online status)
   useEffect(() => {
-    if (!user) {
-      presenceSocketRef.current?.disconnect();
-      presenceSocketRef.current = null;
-      return;
-    }
+    presenceSocketRef.current?.disconnect();
+    presenceSocketRef.current = null;
+    if (!user) return;
     const token = localStorage.getItem('access_token');
     if (!token) return;
+    // Use already-bundled socket.io-client
     import('socket.io-client').then(({ io }) => {
-    const s = io('https://wellconsult-backend.onrender.com', {
-      auth: { token }, transports: ['websocket', 'polling'],
-    });
-    presenceSocketRef.current = s;
-    }).catch(() => {});
+      const s = io('https://wellconsult-backend.onrender.com', {
+        auth: { token }, transports: ['websocket', 'polling'],
+      });
+      s.on('connect', () => console.log('[Presence] Socket connected, role:', user.role));
+      s.on('connect_error', (err: any) => console.log('[Presence] Socket error:', err.message));
+      presenceSocketRef.current = s;
+    }).catch((e) => console.log('[Presence] Import error:', e));
     return () => { presenceSocketRef.current?.disconnect(); presenceSocketRef.current = null; };
   }, [user?.id]);
 
