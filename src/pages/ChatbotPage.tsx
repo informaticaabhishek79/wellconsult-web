@@ -148,19 +148,10 @@ export default function ChatbotPage() {
         role: m.role, content: m.text,
       }));
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: [...history, { role: 'user', content: msgText }],
-        }),
+      const { data: respData } = await api.post('/chatbot/chat', {
+        messages: [...history, { role: 'user', content: msgText }],
       });
-
-      const data = await response.json();
-      const replyText = data.content?.[0]?.text || "I'm sorry, I couldn't process that. Please try again.";
+      const replyText = respData.data?.text || "I'm sorry, I couldn't process that. Please try again.";
 
       const assistantMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', text: replyText, timestamp: new Date() };
       setMessages(prev => [...prev, assistantMsg]);
