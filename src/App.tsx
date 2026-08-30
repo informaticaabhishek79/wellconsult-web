@@ -22,6 +22,7 @@ import ProfilePage from './pages/ProfilePage';
 import AskDoctorPage from './pages/AskDoctorPage';
 import MedicalHistoryPage from './pages/MedicalHistoryPage';
 import MedicalRecordsPage from './pages/MedicalRecordsPage';
+import OnlineDoctors from './pages/OnlineDoctors';
 import DoctorProfilePage from './pages/DoctorProfilePage';
 import LegalPage from './pages/LegalPage';
 import LegalPagesPublic from './pages/LegalPagesPublic';
@@ -98,6 +99,7 @@ function AppContent() {
   const [writePrescription, setWritePrescription] = useState<{appointmentId:string;patientName?:string} | null>(null);
   const [legalSlug, setLegalSlug] = useState<string | null>(null); // legal routing v2
   const [viewingDoctorId, setViewingDoctorId] = useState<string | null>(null);
+  const [instantConsultRequest, setInstantConsultRequest] = useState<any>(null);
   const [showLegalList, setShowLegalList] = useState(false);
 
   useEffect(() => {
@@ -201,6 +203,7 @@ function AppContent() {
     // Patient
     switch (path) {
       case '/home':         return <PatientHome onNav={onNav} />;
+      case '/online':       return <OnlineDoctors onBook={id => { if(id) setBookingDoctorId(id); else onNav('/doctors'); }} />;
       case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} onViewProfile={id => setViewingDoctorId(id)} />;
       case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} onWritePrescription={(id, name) => setWritePrescription({appointmentId: id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
       case '/ask':          return <AskDoctorPage />;

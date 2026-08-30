@@ -2,6 +2,7 @@ import { useAuth } from '../store';
 
 const NAV_PATIENT = [
   { icon:'🏠', label:'Home',           path:'/home' },
+  { icon:'🟢', label:'Doctors Online',  path:'/online' },
   { icon:'📅', label:'Appointments',   path:'/appointments' },
   { icon:'🔍', label:'Symptom search', path:'/symptom' },
   { icon:'💬', label:'Ask a Doctor',   path:'/ask' },
