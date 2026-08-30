@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DoctorCaseManager from './DoctorCaseManager';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 
@@ -24,6 +25,7 @@ export default function DoctorManagementAdmin() {
   const [suspendReason, setSuspendReason] = useState('');
   const [reinstateNote, setReinstateNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [caseDoctor, setCaseDoctor] = useState<any>(null);
 
   const { data: doctors, isLoading } = useQuery({
     queryKey: ['admin-doctors'],
@@ -82,6 +84,7 @@ export default function DoctorManagementAdmin() {
 
   return (
     <div style={{ fontFamily:'var(--font-body)' }}>
+      {caseDoctor && <DoctorCaseManager doctor={caseDoctor} onClose={() => setCaseDoctor(null)} />}
       <h2 style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700, marginBottom:20 }}>Doctor Management</h2>
 
       {/* Stats */}
@@ -226,6 +229,10 @@ export default function DoctorManagementAdmin() {
 
                   {/* Actions */}
                   <div style={{ display:'flex', flexDirection:'column', gap:6, flexShrink:0 }}>
+                    <button onClick={() => setCaseDoctor(doc)}
+                      style={{ padding:'6px 12px', borderRadius:'var(--r-md)', border:'1px solid #7C3AED', background:'#F5F3FF', color:'#7C3AED', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                      📁 Cases
+                    </button>
                     <button onClick={() => { setSelectedDoctor(doc); setShowLogModal(true); }}
                       style={{ padding:'6px 12px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'#fff', color:'var(--text-secondary)', fontSize:11, cursor:'pointer', whiteSpace:'nowrap' }}>
                       📋 History
