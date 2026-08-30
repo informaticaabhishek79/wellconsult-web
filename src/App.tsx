@@ -291,6 +291,7 @@ function AppContent() {
         {renderPage()}
       </main>
     </div>
+    </>
   );
 }
 
