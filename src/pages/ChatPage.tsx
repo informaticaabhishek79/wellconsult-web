@@ -33,6 +33,8 @@ export default function ChatPage({ appointmentId, doctorName, onClose }: {
   const [error, setError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const token = TokenStorage.get('access_token');
