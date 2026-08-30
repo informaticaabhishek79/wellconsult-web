@@ -263,6 +263,14 @@ export default function ChatPage({ appointmentId, doctorName, onClose }: {
               boxSizing: 'border-box' as any,
             }}
           />
+          <input ref={fileInputRef} type="file" style={{ display:'none' }}
+            accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+            onChange={uploadMedia}/>
+          <button onClick={() => fileInputRef.current?.click()} disabled={uploading || !connected}
+            style={{ width:42, height:42, borderRadius:'50%', border:'1px solid var(--border)', background:'#fff', cursor: uploading?'not-allowed':'pointer', fontSize:18, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
+            title="Upload image or video">
+            {uploading ? '⏳' : '📎'}
+          </button>
           <button
             onClick={sendMessage}
             disabled={!input.trim() || !connected}
