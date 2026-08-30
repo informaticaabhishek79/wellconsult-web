@@ -32,7 +32,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   useEffect(() => {
     // Load Jitsi script
     const script = document.createElement('script');
-    script.src = 'https://8x8.vc/external_api.js';
+    script.src = 'https://meet.jit.si/external_api.js';
     script.async = true;
     script.onload = () => initJitsi();
     script.onerror = () => setStatus('error');
@@ -60,8 +60,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const initJitsi = () => {
     if (!jitsiRef.current || !window.JitsiMeetExternalAPI) return;
     try {
-      apiRef.current = new window.JitsiMeetExternalAPI('8x8.vc', {
-        roomName: `vpaas-magic-cookie-free/${roomName}`,
+      apiRef.current = new window.JitsiMeetExternalAPI('meet.jit.si', {
+        roomName,
         parentNode: jitsiRef.current,
         userInfo: { displayName },
         configOverwrite: {
