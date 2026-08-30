@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../store';
-import { TokenStorage } from '../api';
+import { TokenStorage, api } from '../api';
 
 const SOCKET_URL = 'https://wellconsult-backend.onrender.com';
 
@@ -11,6 +11,9 @@ interface Message {
   sender_id: string;
   sender_name: string;
   message: string;
+  message_type: string;
+  file_key?: string;
+  file_name?: string;
   role: string;
   created_at: string;
 }
@@ -78,6 +81,40 @@ export default function ChatPage({ appointmentId, doctorName, onClose }: {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, otherTyping]);
+
+  const uploadMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !socket) return;
+    e.target.value = '';
+
+    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(file.type.startsWith('video/') ? 'Video must be under 50MB' : 'Image must be under 10MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: urlData } = await api.post('/chat/upload-url', {
+        appointment_id: appointmentId,
+        file_name: file.name,
+        content_type: file.type,
+      });
+
+      await fetch(urlData.data.upload_url, {
+        method: 'PUT', body: file, headers: { 'Content-Type': file.type },
+      });
+
+      socket.emit('send_media', {
+        appointmentId,
+        file_key: urlData.data.key,
+        file_name: file.name,
+        media_type: urlData.data.type,
+      });
+    } catch (err) {
+      alert('Upload failed. Please try again.');
+    } finally { setUploading(false); }
+  };
 
   const sendMessage = () => {
     if (!input.trim() || !socket || !connected) return;
