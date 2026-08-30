@@ -101,16 +101,28 @@ export default function ChatbotPage() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) { alert('Voice input not supported in this browser. Please use Chrome.'); return; }
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN';
+    recognition.lang = 'en-US';
     recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.onstart = () => setListening(true);
     recognition.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
+      const transcript = Array.from(e.results)
+        .map((r: any) => r[0].transcript)
+        .join('');
       setInput(transcript);
+      if (e.results[e.results.length - 1].isFinal) {
+        setListening(false);
+        // Auto-send after voice input
+        setTimeout(() => {
+          const finalText = Array.from(e.results).map((r: any) => r[0].transcript).join('');
+          if (finalText.trim()) sendMessage(finalText.trim());
+        }, 300);
+      }
+    };
+    recognition.onerror = (e: any) => {
+      console.log('[Veda] Speech error:', e.error);
       setListening(false);
     };
-    recognition.onerror = () => setListening(false);
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
     recognition.start();
