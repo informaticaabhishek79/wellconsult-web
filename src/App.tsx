@@ -1,4 +1,4 @@
-import { useState, useEffect, useEffect } from 'react';
+import { useState, useEffect, useRef, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from './store';
 import { api } from './api';
@@ -35,6 +35,24 @@ interface NavState { path: string; state?: any; }
 
 function AppContent() {
   const { user } = useAuth();
+  const presenceSocketRef = useRef<any>(null);
+
+  // Connect to socket for presence tracking (doctor online status)
+  useEffect(() => {
+    if (!user) {
+      presenceSocketRef.current?.disconnect();
+      presenceSocketRef.current = null;
+      return;
+    }
+    const token = TokenStorage.get('access_token');
+    if (!token) return;
+    const { io } = require('socket.io-client');
+    const s = io('https://wellconsult-backend.onrender.com', {
+      auth: { token }, transports: ['websocket', 'polling'],
+    });
+    presenceSocketRef.current = s;
+    return () => { s.disconnect(); presenceSocketRef.current = null; };
+  }, [user?.id]);
 
   // Handle Google OAuth callback at App level
   useEffect(() => {
