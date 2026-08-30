@@ -7,6 +7,7 @@ interface Message {
   role: 'user' | 'assistant';
   text: string;
   timestamp: Date;
+  actions?: string[];
 }
 
 const SYSTEM_PROMPT = `You are WellConsult's AI health assistant for an Indian holistic healthcare teleconsultation platform. Your name is "Veda".
@@ -47,7 +48,7 @@ IMPORTANT RULES:
 - You can communicate in both English and Hindi
 - Always end guidance with a call to action (book appointment, consult online doctor)`;
 
-export default function ChatbotPage() {
+export default function ChatbotPage({ onNav }: { onNav?: (path: string) => void }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([{
     id: '0',
@@ -163,7 +164,23 @@ export default function ChatbotPage() {
       });
       const replyText = respData.data?.text || "I'm sorry, I couldn't process that. Please try again.";
 
-      const assistantMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', text: replyText, timestamp: new Date() };
+      // Detect routing intent in response
+      const lowerReply = replyText.toLowerCase();
+      const lowerMsg = msgText.toLowerCase();
+      let actions: string[] = [];
+      if (lowerMsg.includes('book') || lowerMsg.includes('appointment') || lowerMsg.includes('schedule') ||
+          lowerReply.includes('book an appointment') || lowerReply.includes('schedule') || lowerReply.includes('consult a doctor')) {
+        actions = ['book'];
+      }
+      if (lowerMsg.includes('instant') || lowerMsg.includes('online doctor') || lowerMsg.includes('now') ||
+          lowerReply.includes('instant consultation') || lowerReply.includes('doctors online') || lowerReply.includes('available now')) {
+        actions = [...actions, 'online'];
+      }
+      if (lowerMsg.includes('chat') || lowerReply.includes('chat with')) {
+        actions = [...actions, 'chat'];
+      }
+
+      const assistantMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', text: replyText, timestamp: new Date(), actions };
       setMessages(prev => [...prev, assistantMsg]);
       speak(replyText);
     } catch (err) {
@@ -223,10 +240,24 @@ export default function ChatbotPage() {
               {msg.text}
             </div>
             {msg.role === 'assistant' && (
-              <button onClick={() => speak(msg.text)}
-                style={{ fontSize:11, color:'var(--text-muted)', background:'none', border:'none', cursor:'pointer', padding:'2px 6px' }}>
-                🔊 Replay
-              </button>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
+                <button onClick={() => speak(msg.text)}
+                  style={{ fontSize:11, color:'var(--text-muted)', background:'none', border:'none', cursor:'pointer', padding:'2px 6px' }}>
+                  🔊 Replay
+                </button>
+                {msg.actions?.includes('book') && (
+                  <button onClick={() => onNav?.('/appointments')}
+                    style={{ fontSize:11, padding:'4px 10px', borderRadius:20, border:'1px solid var(--primary)', background:'var(--primary-light)', color:'var(--primary)', cursor:'pointer', fontWeight:600 }}>
+                    📅 Book Appointment
+                  </button>
+                )}
+                {msg.actions?.includes('online') && (
+                  <button onClick={() => onNav?.('/online')}
+                    style={{ fontSize:11, padding:'4px 10px', borderRadius:20, border:'1px solid #22C55E', background:'#ECFDF5', color:'#16A34A', cursor:'pointer', fontWeight:600 }}>
+                    ⚡ See Online Doctors
+                  </button>
+                )}
+              </div>
             )}
           </div>
         ))}

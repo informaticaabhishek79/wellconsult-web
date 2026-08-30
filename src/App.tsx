@@ -246,7 +246,7 @@ function AppContent() {
     switch (path) {
       case '/home':         return <PatientHome onNav={onNav} />;
       case '/online':       return <OnlineDoctors onBook={id => { if(id) setBookingDoctorId(id); else onNav('/doctors'); }} />;
-      case '/veda':        return <ChatbotPage />;
+      case '/veda':        return <ChatbotPage onNav={onNav} />;
       case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} onViewProfile={id => setViewingDoctorId(id)} />;
       case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} onWritePrescription={(id, name) => setWritePrescription({appointmentId: id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
       case '/ask':          return <AskDoctorPage />;
