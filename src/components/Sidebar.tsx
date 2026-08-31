@@ -66,23 +66,23 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
       <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{
       width: 220, flexShrink: 0, height: '100vh', position: 'sticky', top: 0,
       background: '#fff', borderRight: '1px solid var(--border)',
-      display: 'flex', flexDirection: 'column',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
       {/* Logo */}
-      <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
-        <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{
+      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
             width: 34, height: 34, borderRadius: 8,
             background: 'var(--primary)', display: 'flex',
             alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
           }}>
-            <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ position: 'absolute', width: 14, height: 3, background: '#fff', borderRadius: 2 }}/>
-            <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ position: 'absolute', width: 3, height: 14, background: '#fff', borderRadius: 2 }}/>
-            <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ position: 'absolute', width: 5, height: 5, borderRadius: '50%', background: '#F59E0B', bottom: 5, right: 5 }}/>
+            <div style={{ position: 'absolute', width: 14, height: 3, background: '#fff', borderRadius: 2 }}/>
+            <div style={{ position: 'absolute', width: 3, height: 14, background: '#fff', borderRadius: 2 }}/>
+            <div style={{ position: 'absolute', width: 5, height: 5, borderRadius: '50%', background: '#F59E0B', bottom: 5, right: 5 }}/>
           </div>
           <div>
-            <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>WellConsult</div>
-            <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>HEALTHCARE</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>WellConsult</div>
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>HEALTHCARE</div>
           </div>
         </div>
       </div>
@@ -110,14 +110,14 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
       </nav>
 
       {/* User + logout */}
-      <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ padding: '12px 8px', borderTop: '1px solid var(--border)' }}>
-        <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 'var(--r-md)', background: 'var(--bg)', marginBottom: 6 }}>
-          <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+      <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 'var(--r-md)', background: 'var(--bg)', marginBottom: 6 }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
             {initials}
           </div>
-          <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ flex: 1, minWidth: 0 }}>
-            <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.full_name}</div>
-            <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{user?.role}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.full_name}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{user?.role}</div>
           </div>
         </div>
         <button onClick={() => { if (window.confirm('Sign out of WellConsult?')) logout(); }} style={{
