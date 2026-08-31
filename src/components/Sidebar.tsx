@@ -66,7 +66,7 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
       <div className={`sidebar-container${mobileOpen ? ' open' : ''}`} style={{
       width: 220, flexShrink: 0, height: '100vh', position: 'sticky', top: 0,
       background: '#fff', borderRight: '1px solid var(--border)',
-      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
     }}>
       {/* Logo */}
       <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
