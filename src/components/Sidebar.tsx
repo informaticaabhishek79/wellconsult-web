@@ -59,7 +59,7 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
       {mobileOpen && (
         <div onClick={() => setMobileOpen(false)} className="mobile-overlay" style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999,
-          display: 'none', // shown by CSS on mobile
+          // display handled by CSS media query
         }}/>
       )}
 
@@ -132,3 +132,4 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
     </>
   );
 }
+
