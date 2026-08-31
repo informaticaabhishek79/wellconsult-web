@@ -120,3 +120,36 @@ input, textarea, select { font-family: var(--font-body); }
     min-width: 0 !important;
   }
 }
+
+/* Auth page mobile */
+@media (max-width: 768px) {
+  .auth-hero {
+    display: none !important;
+  }
+  .auth-container {
+    flex-direction: column !important;
+  }
+  .auth-form-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 24px 16px !important;
+  }
+  /* Grid layouts become single column */
+  .grid-2col {
+    grid-template-columns: 1fr !important;
+  }
+  /* Tables scroll horizontally */
+  .table-wrap {
+    overflow-x: auto !important;
+  }
+  /* Cards stack vertically */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
