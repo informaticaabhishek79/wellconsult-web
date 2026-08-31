@@ -41,7 +41,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
     // Setup socket for chat
     const token = TokenStorage.get('access_token');
-    const s = io('https://deemona-doctors-backend.onrender.com', {
+    const s = io('https://wellconsult-backend.onrender.com', {
       auth: { token }, transports: ['websocket', 'polling'],
     });
     socketRef.current = s;
