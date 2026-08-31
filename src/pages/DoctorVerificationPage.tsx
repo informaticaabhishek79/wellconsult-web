@@ -125,7 +125,7 @@ export default function DoctorVerificationPage() {
 
       {/* Security note */}
       <div style={{ marginTop: 20, padding: '12px 16px', borderRadius: 'var(--r-md)', background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-        🔒 <strong>Privacy & Security:</strong> Your documents are encrypted and stored securely on Cloudflare R2. Only WellConsult admins can access them for verification. Documents are never shared with patients.
+        🔒 <strong>Privacy & Security:</strong> Your documents are encrypted and stored securely on Cloudflare R2. Only Deemona Doctors admins can access them for verification. Documents are never shared with patients.
       </div>
     </div>
   );

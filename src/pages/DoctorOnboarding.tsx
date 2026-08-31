@@ -157,7 +157,7 @@ export default function DoctorOnboarding({ onComplete }: { onComplete: () => voi
             <div style={{ position:'absolute', width:14, height:3, background:'#fff', borderRadius:2 }}/>
             <div style={{ position:'absolute', width:3, height:14, background:'#fff', borderRadius:2 }}/>
           </div>
-          <span style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>WellConsult</span>
+          <span style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>Deemona Doctors</span>
         </div>
         <div style={{ marginLeft:'auto', fontSize:13, color:'var(--text-muted)' }}>
           Step {step+1} of {STEPS.length}

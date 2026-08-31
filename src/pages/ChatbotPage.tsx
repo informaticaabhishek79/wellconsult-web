@@ -10,9 +10,9 @@ interface Message {
   actions?: string[];
 }
 
-const SYSTEM_PROMPT = `You are WellConsult's AI health assistant for an Indian holistic healthcare teleconsultation platform. Your name is "Veda".
+const SYSTEM_PROMPT = `You are Deemona Doctors's AI health assistant for an Indian holistic healthcare teleconsultation platform. Your name is "Veda".
 
-ABOUT WELLCONSULT:
+ABOUT DEEMONA DOCTORS:
 - Indian holistic healthcare platform connecting patients with doctors via teleconsultation
 - Medical systems available: Allopathy, Homeopathy, Ayurveda, Yoga Therapy, Naturopathy, Unani
 - Services: Video consultations, Chat consultations, Instant consultations with online doctors
@@ -53,7 +53,7 @@ export default function ChatbotPage({ onNav }: { onNav?: (path: string) => void 
   const [messages, setMessages] = useState<Message[]>([{
     id: '0',
     role: 'assistant',
-    text: `Namaste! 🙏 I'm Veda, your WellConsult health assistant. I can help you find the right doctor, understand your symptoms, and guide you through our platform.\n\nHow are you feeling today? What health concern can I help you with?`,
+    text: `Namaste! 🙏 I'm Veda, your Deemona Doctors health assistant. I can help you find the right doctor, understand your symptoms, and guide you through our platform.\n\nHow are you feeling today? What health concern can I help you with?`,
     timestamp: new Date(),
   }]);
   const [input, setInput] = useState('');
@@ -207,7 +207,7 @@ export default function ChatbotPage({ onNav }: { onNav?: (path: string) => void 
           🤖
         </div>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:16, fontWeight:700, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>Veda — WellConsult AI</div>
+          <div style={{ fontSize:16, fontWeight:700, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>Veda — Deemona Doctors AI</div>
           <div style={{ fontSize:12, color:'#22C55E', display:'flex', alignItems:'center', gap:4 }}>
             <div style={{ width:6, height:6, borderRadius:'50%', background:'#22C55E' }}/>
             Always available · Speaks English & Hindi

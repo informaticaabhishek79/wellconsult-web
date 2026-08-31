@@ -24,7 +24,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const roomName = `wellconsult-${appointmentId.slice(0, 16)}`;
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const roomName = `wc${appointmentId.slice(0, 10)}${today}`;
   const displayName = user?.role === 'doctor'
     ? (doctorName || 'Doctor')
     : (patientName || 'Patient');
@@ -40,7 +41,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
     // Setup socket for chat
     const token = TokenStorage.get('access_token');
-    const s = io('https://wellconsult-backend.onrender.com', {
+    const s = io('https://deemona-doctors-backend.onrender.com', {
       auth: { token }, transports: ['websocket', 'polling'],
     });
     socketRef.current = s;
@@ -71,6 +72,11 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
           prejoinPageEnabled: false,
           disableDeepLinking: true,
           defaultLanguage: 'en',
+          lobby: { autoKnock: false, enableChat: false },
+          enableLobbyChat: false,
+          membersOnly: false,
+          requireDisplayName: false,
+          enableInsecureRoomNameWarning: false,
           toolbarButtons: [
             'microphone', 'camera', 'desktop', 'fullscreen',
             'hangup', 'tileview', 'settings',

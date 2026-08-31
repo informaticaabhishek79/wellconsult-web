@@ -244,16 +244,16 @@ export default function AuthPage() {
         </div>
       )}
 
-      <div className="auth-container" style={{ display:'flex', minHeight:'100vh', fontFamily:'var(--font-body)' }}>
+      <div style={{ display:'flex', minHeight:'100vh', fontFamily:'var(--font-body)' }}>
         {/* Left panel */}
-        <div className="auth-hero" style={{ flex:'0 0 55%', background:'linear-gradient(135deg,#0A5C52,#0A7B6C,#0E9E8A)', display:'flex', flexDirection:'column', justifyContent:'center', padding:'60px 64px', position:'relative', overflow:'hidden' }}>
+        <div style={{ flex:'0 0 55%', background:'linear-gradient(135deg,#0A5C52,#0A7B6C,#0E9E8A)', display:'flex', flexDirection:'column', justifyContent:'center', padding:'60px 64px', position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }}/>
           <div style={{ position:'absolute', bottom:-120, left:-60, width:400, height:400, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
           <div style={{ position:'relative', zIndex:1 }}>
             <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:48 }}>
               <div style={{ width:52, height:52, background:'rgba(255,255,255,0.15)', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, fontWeight:800, color:'#fff' }}>+</div>
               <div>
-                <div style={{ fontSize:24, fontWeight:800, color:'#fff', fontFamily:'var(--font-display)' }}>WellConsult</div>
+                <div style={{ fontSize:24, fontWeight:800, color:'#fff', fontFamily:'var(--font-display)' }}>Deemona Doctors</div>
                 <div style={{ fontSize:11, color:'rgba(255,255,255,0.65)', letterSpacing:2, textTransform:'uppercase', marginTop:1 }}>Holistic Healthcare</div>
               </div>
             </div>
@@ -314,14 +314,14 @@ export default function AuthPage() {
             {mode === 'login' && (
               <>
                 <h2 style={{ fontFamily:'var(--font-display)', fontSize:28, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Welcome back</h2>
-                <p style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24 }}>Sign in to your WellConsult account</p>
+                <p style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24 }}>Sign in to your Deemona Doctors account</p>
                 <form onSubmit={handleLogin}>
                   <Field label="Email address" type="email" placeholder="you@example.com" value={email} onChange={setEmail} />
                   <Field label="Password" type="password" placeholder="Enter your password" value={password} onChange={setPassword} />
                   <div style={{ textAlign:'right', marginBottom:20, marginTop:-8 }}>
                     <span onClick={() => setShowForgot(true)} style={{ fontSize:13, color:'var(--primary)', cursor:'pointer', fontWeight:500 }}>Forgot password?</span>
                   </div>
-                  <SubmitBtn loading={loading} label="Sign in to WellConsult" />
+                  <SubmitBtn loading={loading} label="Sign in to Deemona Doctors" />
                 </form>
               </>
             )}
@@ -375,7 +375,7 @@ export default function AuthPage() {
           { label:'Medical Disclaimer', slug:'medical-disclaimer' },
           { label:'Contact Us', slug:'contact' },
         ].map(link => (
-          <a key={link.slug} href={`https://wellconsult-web.onrender.com/legal/${link.slug}`} target="_blank" rel="noreferrer"
+          <a key={link.slug} href={`https://deemona-doctors-web.onrender.com/legal/${link.slug}`} target="_blank" rel="noreferrer"
             style={{ fontSize:12, color:'var(--text-muted)', textDecoration:'none', cursor:'pointer' }}>
             {link.label}
           </a>

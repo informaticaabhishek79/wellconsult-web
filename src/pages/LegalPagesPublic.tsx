@@ -25,7 +25,7 @@ export default function LegalPagesPublic({ onView }: { onView: (slug: string) =>
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '28px 24px', fontFamily: 'var(--font-body)' }}>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Legal & Policies</h1>
-      <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24 }}>WellConsult's terms, policies and agreements</p>
+      <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24 }}>Deemona Doctors's terms, policies and agreements</p>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {categories.map(cat => (

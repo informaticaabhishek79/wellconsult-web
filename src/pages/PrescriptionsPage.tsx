@@ -22,7 +22,7 @@ export default function PrescriptionsPage() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Prescription - WellConsult</title>
+        <title>Prescription - Deemona Doctors</title>
         <style>
           body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; color: #1a1a1a; }
           .header { border-bottom: 2px solid #0A7B6C; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; }
@@ -41,7 +41,7 @@ export default function PrescriptionsPage() {
       <body>
         <div class="header">
           <div>
-            <div class="logo">WellConsult</div>
+            <div class="logo">Deemona Doctors</div>
             <div class="doctor">${rx.doctor_name}</div>
             <div class="date">Date: ${new Date(rx.issued_at).toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' })}</div>
           </div>
@@ -75,7 +75,7 @@ export default function PrescriptionsPage() {
         </div>
         
         <div class="footer">
-          This prescription was issued digitally via WellConsult — wellconsult-web.onrender.com<br/>
+          This prescription was issued digitally via Deemona Doctors — deemona-doctors-web.onrender.com<br/>
           For emergencies call 112 or visit your nearest hospital.
         </div>
         
@@ -113,7 +113,7 @@ export default function PrescriptionsPage() {
             {/* Prescription header */}
             <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, #0E9E8A 100%)', padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#fff' }}>WellConsult</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#fff' }}>Deemona Doctors</div>
                 <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{selected.doctor_name}</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>
                   {new Date(selected.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}

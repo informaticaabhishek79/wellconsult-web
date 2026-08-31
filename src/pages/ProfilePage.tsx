@@ -124,7 +124,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Logout */}
-      <button onClick={() => { if (window.confirm('Sign out of WellConsult?')) logout(); }} style={{
+      <button onClick={() => { if (window.confirm('Sign out of Deemona Doctors?')) logout(); }} style={{
         width: '100%', padding: '13px', borderRadius: 'var(--r-md)',
         border: '1.5px solid var(--error)', background: 'var(--error-light)',
         color: 'var(--error)', fontSize: 15, fontWeight: 700, cursor: 'pointer',

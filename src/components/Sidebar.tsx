@@ -81,7 +81,7 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
             <div style={{ position: 'absolute', width: 5, height: 5, borderRadius: '50%', background: '#F59E0B', bottom: 5, right: 5 }}/>
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>WellConsult</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>Deemona Doctors</div>
             <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>HEALTHCARE</div>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
             <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{user?.role}</div>
           </div>
         </div>
-        <button onClick={() => { if (window.confirm('Sign out of WellConsult?')) logout(); }} style={{
+        <button onClick={() => { if (window.confirm('Sign out of Deemona Doctors?')) logout(); }} style={{
           width: '100%', padding: '8px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
           background: 'transparent', fontSize: 13, color: 'var(--text-secondary)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,

@@ -124,7 +124,7 @@ export default function DoctorProfilePage({ doctorId, onBook, onAsk }: {
                 💬 Ask a question
               </button>
               <div style={{ fontSize:11, color:'var(--text-muted)', textAlign:'center' }}>
-                🔒 Contact via WellConsult only
+                🔒 Contact via Deemona Doctors only
               </div>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function DoctorProfilePage({ doctorId, onBook, onAsk }: {
 
       {/* Privacy notice */}
       <div style={{ padding:'12px 16px', borderRadius:'var(--r-md)', background:'#FFFBEB', border:'1px solid #FDE68A', fontSize:12, color:'#92400E', marginBottom:16 }}>
-        🔒 <strong>Privacy protected:</strong> Doctor's personal contact details are not shared. All communication happens securely through WellConsult to protect both patients and practitioners.
+        🔒 <strong>Privacy protected:</strong> Doctor's personal contact details are not shared. All communication happens securely through Deemona Doctors to protect both patients and practitioners.
       </div>
 
       {/* Reviews */}
