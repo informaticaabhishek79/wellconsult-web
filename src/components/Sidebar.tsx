@@ -136,5 +136,6 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
         </button>
       </div>
     </div>
+    </>
   );
 }
