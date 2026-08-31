@@ -50,7 +50,7 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
         color: '#fff', fontSize: 18, cursor: 'pointer',
         alignItems: 'center', justifyContent: 'center',
         boxShadow: 'var(--shadow-md)',
-        display: 'none',  // hidden by default, shown by CSS on mobile
+        // display handled by CSS
       }}>
         {mobileOpen ? '✕' : '☰'}
       </button>
