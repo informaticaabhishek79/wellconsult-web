@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../store';
 
 const NAV_PATIENT = [
@@ -28,12 +29,48 @@ const NAV_ADMIN = [
 ];
 
 export default function Sidebar({ current, onNav }: { current: string; onNav: (path: string) => void }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  // Close mobile menu on nav
+  const handleNav = (path: string) => {
+    onNav(path);
+    setMobileOpen(false);
+  };
   const { user, logout } = useAuth();
   const nav = user?.role === 'doctor' ? NAV_DOCTOR : user?.role === 'admin' ? NAV_ADMIN : NAV_PATIENT;
   const initials = user?.full_name?.split(' ').map(w => w[0]).slice(0,2).join('') || '?';
 
   return (
-    <div style={{
+    <>
+      {/* Mobile hamburger button */}
+      {isMobile && (
+        <button onClick={() => setMobileOpen(!mobileOpen)} style={{
+          position: 'fixed', top: 12, left: 12, zIndex: 1001,
+          width: 40, height: 40, borderRadius: 10,
+          background: 'var(--primary)', border: 'none',
+          color: '#fff', fontSize: 18, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: 'var(--shadow-md)',
+        }}>
+          {mobileOpen ? '✕' : '☰'}
+        </button>
+      )}
+
+      {/* Mobile overlay */}
+      {isMobile && mobileOpen && (
+        <div onClick={() => setMobileOpen(false)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999,
+        }}/>
+      )}
+
+      <div style={{
       width: 220, flexShrink: 0, height: '100vh', position: 'sticky', top: 0,
       background: '#fff', borderRight: '1px solid var(--border)',
       display: 'flex', flexDirection: 'column',
@@ -62,7 +99,7 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
         {nav.map(item => {
           const active = current === item.path;
           return (
-            <button key={item.path} onClick={() => onNav(item.path)} style={{
+            <button key={item.path} onClick={() => handleNav(item.path)} style={{
               width: '100%', padding: '9px 10px', borderRadius: 'var(--r-md)',
               border: 'none', background: active ? 'var(--primary-light)' : 'transparent',
               display: 'flex', alignItems: 'center', gap: 10,
