@@ -1,31 +1,31 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useAuth } from '../store';
 
 const NAV_PATIENT = [
-  { icon:'🏠', label:'Home',           path:'/home' },
-  { icon:'🟢', label:'Doctors Online',  path:'/online' },
-  { icon:'🤖', label:'Ask Veda AI',      path:'/veda' },
-  { icon:'📅', label:'Appointments',   path:'/appointments' },
-  { icon:'🔍', label:'Symptom search', path:'/symptom' },
-  { icon:'💬', label:'Ask a Doctor',   path:'/ask' },
-  { icon:'💊', label:'Prescriptions',  path:'/prescriptions' },
-  { icon:'📁', label:'My Records',     path:'/records' },
-  { icon:'🏥', label:'Medical History', path:'/history' },
-  { icon:'👤', label:'Profile',        path:'/profile' },
+  { icon:'ðŸ ', label:'Home',           path:'/home' },
+  { icon:'ðŸŸ¢', label:'Doctors Online',  path:'/online' },
+  { icon:'ðŸ¤–', label:'Ask Veda AI',      path:'/veda' },
+  { icon:'ðŸ“…', label:'Appointments',   path:'/appointments' },
+  { icon:'ðŸ”', label:'Symptom search', path:'/symptom' },
+  { icon:'ðŸ’¬', label:'Ask a Doctor',   path:'/ask' },
+  { icon:'ðŸ’Š', label:'Prescriptions',  path:'/prescriptions' },
+  { icon:'ðŸ“', label:'My Records',     path:'/records' },
+  { icon:'ðŸ¥', label:'Medical History', path:'/history' },
+  { icon:'ðŸ‘¤', label:'Profile',        path:'/profile' },
 ];
 
 const NAV_DOCTOR = [
-  { icon:'📊', label:'Dashboard',     path:'/dashboard' },
-  { icon:'📅', label:'Appointments',  path:'/appointments' },
-  { icon:'💬', label:'Patient Q&A',   path:'/questions' },
-  { icon:'💊', label:'Prescriptions', path:'/prescriptions' },
-  { icon:'✅', label:'Verification',  path:'/verification' },
-  { icon:'👥', label:'Patients',      path:'/patients' },
-  { icon:'👤', label:'Profile',       path:'/profile' },
+  { icon:'ðŸ“Š', label:'Dashboard',     path:'/dashboard' },
+  { icon:'ðŸ“…', label:'Appointments',  path:'/appointments' },
+  { icon:'ðŸ’¬', label:'Patient Q&A',   path:'/questions' },
+  { icon:'ðŸ’Š', label:'Prescriptions', path:'/prescriptions' },
+  { icon:'âœ…', label:'Verification',  path:'/verification' },
+  { icon:'ðŸ‘¥', label:'Patients',      path:'/patients' },
+  { icon:'ðŸ‘¤', label:'Profile',       path:'/profile' },
 ];
 
 const NAV_ADMIN = [
-  { icon:'🛡️', label:'Admin Panel', path:'/admin' },
+  { icon:'ðŸ›¡ï¸', label:'Admin Panel', path:'/admin' },
 ];
 
 export default function Sidebar({ current, onNav }: { current: string; onNav: (path: string) => void }) {
@@ -125,12 +125,13 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
           background: 'transparent', fontSize: 13, color: 'var(--text-secondary)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         }}>
-          <span>🚪</span> Sign out
+          <span>ðŸšª</span> Sign out
         </button>
       </div>
     </div>
     </>
   );
 }
+
 
 
