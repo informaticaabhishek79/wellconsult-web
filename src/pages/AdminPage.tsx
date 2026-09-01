@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import LegalPagesAdmin from './LegalPagesAdmin';
 import DoctorManagementAdmin from './DoctorManagementAdmin';
+import AgentManagementAdmin from './AgentManagementAdmin';
 import LegalPage from './LegalPage';
 import { api } from '../api';
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<'pending'|'kyc'|'doctors'|'legal'|'stats'>('pending');
+  const [tab, setTab] = useState<'pending'|'kyc'|'doctors'|'agents'|'legal'|'stats'>('pending');
   const [adminLegalSlug, setAdminLegalSlug] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [docUrl, setDocUrl] = useState('');
@@ -58,7 +59,7 @@ export default function AdminPage() {
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, marginBottom: 24 }}>Admin Panel</h1>
 
       <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', marginBottom: 24 }}>
-        {([['pending',`Verify (${pending?.length||0})`],['kyc',`KYC Docs (${kycPending?.length||0})`],['doctors','Manage Doctors'],['legal','Legal Pages'],['stats','Platform stats']] as const).map(([key,label]) => (
+        {([['pending',`Verify (${pending?.length||0})`],['kyc',`KYC Docs (${kycPending?.length||0})`],['doctors','Manage Doctors'],['agents','Agents'],['legal','Legal Pages'],['stats','Platform stats']] as const).map(([key,label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             padding: '10px 20px', border: 'none', background: 'none',
             borderBottom: tab===key ? '2px solid var(--primary)' : '2px solid transparent',
@@ -134,6 +135,7 @@ export default function AdminPage() {
         )
       )}
       {tab === 'doctors' && <DoctorManagementAdmin />}
+      {tab === 'agents' && <AgentManagementAdmin />}
       {tab === 'legal' && (adminLegalSlug ? <LegalPage slug={adminLegalSlug} onBack={() => setAdminLegalSlug(null)} /> : <LegalPagesAdmin onView={(slug) => setAdminLegalSlug(slug)} />)}
 
       {tab === 'kyc' && (

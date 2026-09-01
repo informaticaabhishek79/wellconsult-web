@@ -24,6 +24,9 @@ import MedicalHistoryPage from './pages/MedicalHistoryPage';
 import MedicalRecordsPage from './pages/MedicalRecordsPage';
 import OnlineDoctors from './pages/OnlineDoctors';
 import ChatbotPage from './pages/ChatbotPage';
+import AgentOnboarding from './pages/AgentOnboarding';
+import AgentDashboard from './pages/AgentDashboard';
+import AgentManagementAdmin from './pages/AgentManagementAdmin';
 import DoctorProfilePage from './pages/DoctorProfilePage';
 import LegalPage from './pages/LegalPage';
 import LegalPagesPublic from './pages/LegalPagesPublic';
@@ -47,7 +50,7 @@ function AppContent() {
     const token = localStorage.getItem('access_token');
     if (!token) return;
     import('socket.io-client').then(({ io }) => {
-      const s = io('https://wellconsult-backend.onrender.com', {
+      const s = io('https://deemona-doctors-backend.onrender.com', {
         auth: { token }, transports: ['websocket', 'polling'],
       });
       s.on('connect', () => console.log('[Presence] Socket connected, role:', user.role));
@@ -102,7 +105,7 @@ function AppContent() {
 
     if (oauthCode) {
       window.history.replaceState({}, '', window.location.pathname);
-      fetch('https://wellconsult-backend.onrender.com/api/v1/auth/google/token', {
+      fetch('https://deemona-doctors-backend.onrender.com/api/v1/auth/google/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: oauthCode }),
@@ -247,6 +250,8 @@ function AppContent() {
       case '/home':         return <PatientHome onNav={onNav} />;
       case '/online':       return <OnlineDoctors onBook={id => { if(id) setBookingDoctorId(id); else onNav('/doctors'); }} />;
       case '/veda':        return <ChatbotPage onNav={onNav} />;
+      case '/agent':       return <AgentDashboard />;
+      case '/agent/join':  return <AgentOnboarding onSuccess={() => onNav('/agent')} />;
       case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} onViewProfile={id => setViewingDoctorId(id)} />;
       case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} onWritePrescription={(id, name) => setWritePrescription({appointmentId: id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
       case '/ask':          return <AskDoctorPage />;
