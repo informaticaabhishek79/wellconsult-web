@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../store';
 import { api } from '../api';
 
-type Mode = 'login' | 'patient-register' | 'doctor-register';
+type Mode = 'login' | 'patient-register' | 'doctor-register' | 'agent-register';
 
 const SPECIALTIES = [
   { id: 'allopathy',   label: 'Allopathy',    icon: '⚕️' },
@@ -196,6 +196,7 @@ export default function AuthPage() {
     'login':           { active:'#0A7B6C', bg:'#E6F4F1' },
     'patient-register':{ active:'#2563EB', bg:'#EFF6FF' },
     'doctor-register': { active:'#7C3AED', bg:'#F5F3FF' },
+    'agent-register':  { active:'#D97706', bg:'#FFFBEB' },
   };
 
   // Reset password screen
