@@ -385,6 +385,23 @@ export default function AuthPage() {
                 </form>
               </>
             )}
+
+            {mode === 'agent-register' && (
+              <>
+                <h2 style={{ fontFamily:'var(--font-display)', fontSize:24, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Become an Agent</h2>
+                <p style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:20 }}>Join Deemona Doctors network and earn commissions by referring patients and doctors</p>
+                {error && <div style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:'var(--r-md)', padding:'10px 14px', marginBottom:16, fontSize:13, color:'#DC2626' }}>{error}</div>}
+                {regSuccess && <div style={{ background:'#ECFDF5', border:'1px solid #A7F3D0', borderRadius:'var(--r-md)', padding:'10px 14px', marginBottom:16, fontSize:13, color:'#065F46' }}>{regSuccess}</div>}
+                <Field label="Full Name *" placeholder="As per Aadhaar" value={pName} onChange={setPName} />
+                <Field label="Email *" type="email" placeholder="your@email.com" value={email} onChange={setEmail} />
+                <Field label="Mobile *" placeholder="+91 XXXXX XXXXX" value={pPhone} onChange={setPPhone} />
+                <Field label="Password *" type="password" placeholder="Minimum 8 characters" value={password} onChange={setPassword} />
+                <Field label="Confirm Password *" type="password" placeholder="Repeat password" value={confirmPassword} onChange={setConfirmPassword} />
+                <button onClick={async () => { if (!pName||!email||!password||!pPhone){setError('Fill all fields');return;} if(password!==confirmPassword){setError('Passwords do not match');return;} setLoading(true);setError(''); try{ await api.post('/auth/register',{full_name:pName,email,phone:pPhone,password,role:'agent'}); setRegSuccess('Agent account created! Please sign in.'); setMode('login');setEmail(email); }catch(err:any){setError(err.response?.data?.error?.message||'Failed');} finally{setLoading(false);} }} disabled={loading} style={{ width:'100%', padding:'13px', borderRadius:'var(--r-md)', border:'none', background:loading?'var(--border)':'#D97706', color:loading?'var(--text-muted)':'#fff', fontSize:15, fontWeight:700, cursor:loading?'not-allowed':'pointer', marginTop:8 }}>
+                  {loading ? 'Creating...' : 'Register as Agent →'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
