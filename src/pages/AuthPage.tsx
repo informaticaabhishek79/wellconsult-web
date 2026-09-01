@@ -135,6 +135,27 @@ export default function AuthPage() {
     } finally { setLoading(false); }
   };
 
+  // Agent registration
+  const [aName, setAName] = useState('');
+  const [aPhone, setAPhone] = useState('');
+  const [aCity, setACity] = useState('');
+  const [aState, setAState] = useState('');
+
+  const handleAgentRegister = async () => {
+    if (!aName || !email || !password || !aPhone) { setError('Please fill all required fields.'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
+    setLoading(true); setError('');
+    try {
+      await api.post('/auth/register', { full_name: aName, email, phone: aPhone, password, role: 'agent' });
+      // Also register as marketing agent
+      await api.post('/agents/register', { full_name: aName, phone: aPhone, city: aCity, state: aState });
+      setRegSuccess('Agent account created! You can now sign in.');
+      setMode('login'); setEmail(email);
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Registration failed.');
+    } finally { setLoading(false); }
+  };
+
   const handleDoctorRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (dPassword !== dConfirm) { setError('Passwords do not match.'); return; }
@@ -244,9 +265,9 @@ export default function AuthPage() {
         </div>
       )}
 
-      <div className="auth-container" style={{ display:'flex', minHeight:'100vh', fontFamily:'var(--font-body)' }}>
+      <div style={{ display:'flex', minHeight:'100vh', fontFamily:'var(--font-body)' }}>
         {/* Left panel */}
-        <div className="auth-hero" style={{ flex:'0 0 55%', background:'linear-gradient(135deg,#0A5C52,#0A7B6C,#0E9E8A)', display:'flex', flexDirection:'column', justifyContent:'center', padding:'60px 64px', position:'relative', overflow:'hidden' }}>
+        <div style={{ flex:'0 0 55%', background:'linear-gradient(135deg,#0A5C52,#0A7B6C,#0E9E8A)', display:'flex', flexDirection:'column', justifyContent:'center', padding:'60px 64px', position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }}/>
           <div style={{ position:'absolute', bottom:-120, left:-60, width:400, height:400, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
           <div style={{ position:'relative', zIndex:1 }}>

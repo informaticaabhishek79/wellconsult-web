@@ -12,7 +12,6 @@ const NAV_PATIENT = [
   { icon:'📁', label:'My Records',     path:'/records' },
   { icon:'🏥', label:'Medical History', path:'/history' },
   { icon:'👤', label:'Profile',        path:'/profile' },
-  { icon:'🤝', label:'Agent Portal',    path:'/agent' },
 ];
 
 const NAV_DOCTOR = [
@@ -23,6 +22,14 @@ const NAV_DOCTOR = [
   { icon:'✅', label:'Verification',  path:'/verification' },
   { icon:'👥', label:'Patients',      path:'/patients' },
   { icon:'👤', label:'Profile',       path:'/profile' },
+];
+
+const NAV_AGENT = [
+  { icon:'📊', label:'Dashboard',      path:'/agent' },
+  { icon:'👥', label:'My Referrals',   path:'/agent' },
+  { icon:'📄', label:'Documents',      path:'/agent' },
+  { icon:'💰', label:'Earnings',       path:'/agent' },
+  { icon:'👤', label:'Profile',        path:'/profile' },
 ];
 
 const NAV_ADMIN = [
@@ -38,7 +45,7 @@ export default function Sidebar({ current, onNav }: { current: string; onNav: (p
     setMobileOpen(false);
   };
   const { user, logout } = useAuth();
-  const nav = user?.role === 'doctor' ? NAV_DOCTOR : user?.role === 'admin' ? NAV_ADMIN : NAV_PATIENT;
+  const nav = user?.role === 'doctor' ? NAV_DOCTOR : user?.role === 'admin' ? NAV_ADMIN : user?.role === 'agent' ? NAV_AGENT : NAV_PATIENT;
   const initials = user?.full_name?.split(' ').map(w => w[0]).slice(0,2).join('') || '?';
 
   return (
