@@ -313,7 +313,7 @@ export default function AuthPage() {
           <div style={{ maxWidth:400, width:'100%', margin:'0 auto' }}>
             {/* Tabs */}
             <div style={{ display:'flex', gap:6, marginBottom:28 }}>
-              {([['login','Sign in'],['patient-register','Patient'],['doctor-register','Doctor']] as const).map(([key,label]) => {
+              {([['login','Sign in'],['patient-register','Patient'],['doctor-register','Doctor'],['agent-register','Agent']] as const).map(([key,label]) => {
                 const c = TAB_COLORS[key];
                 const active = mode === key;
                 return (
