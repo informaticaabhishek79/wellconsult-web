@@ -237,6 +237,9 @@ export default function AgentManagementAdmin() {
                       🆔 {agent.agent_code} · {agent.email} · {agent.city}, {agent.state}
                     </div>
                     {agent.territory && <div style={{ fontSize:12, color:'var(--text-secondary)' }}>📍 Territory: {agent.territory}</div>}
+                    {agent.location_id && (
+                      <div style={{ fontSize:12, color:'#1D4ED8' }}>📍 {agent.location_id} {agent.location_name ? `— ${agent.location_name}` : ''}</div>
+                    )}
                     <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>
                       Joined: {new Date(agent.created_at).toLocaleDateString('en-IN')} · Referrals: {agent.total_referrals} · Earnings: ₹{agent.total_earnings}
                     </div>
@@ -258,6 +261,19 @@ export default function AgentManagementAdmin() {
                         ❌ Reject
                       </button>
                     )}
+                    <button onClick={async () => {
+                        const locId = prompt('Enter Location ID (e.g. ZONE-MH-001):');
+                        const locName = prompt('Enter Location Name (e.g. Mumbai North):');
+                        if (locId) {
+                          try {
+                            await api.post(`/agents/${agent.id}/assign-location`, { location_id: locId, location_name: locName });
+                            qc.invalidateQueries({ queryKey: ['admin-agents'] });
+                            alert('Location assigned!');
+                          } catch { alert('Failed to assign location.'); }
+                        }
+                      }} style={{ padding:'6px 12px', borderRadius:'var(--r-md)', border:'1px solid #BFDBFE', background:'#EFF6FF', color:'#1D4ED8', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                      📍 Location
+                    </button>
                     {agent.profile_status === 'active' && (
                       <button onClick={() => { setSelectedAgent(agent); setShowViolationModal(true); }}
                         style={{ padding:'6px 12px', borderRadius:'var(--r-md)', border:'1px solid #FDE68A', background:'#FFFBEB', color:'#D97706', fontSize:11, fontWeight:600, cursor:'pointer' }}>

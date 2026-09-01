@@ -61,6 +61,11 @@ export default function AgentDashboard() {
             <div style={{ fontSize:28, fontWeight:800, fontFamily:'monospace', letterSpacing:2 }}>{agent.agent_code}</div>
             <div style={{ fontSize:15, fontWeight:600, marginTop:4 }}>{agent.full_name}</div>
             <div style={{ fontSize:12, opacity:0.8 }}>{agent.city}, {agent.state}</div>
+            {agent.location_id && (
+              <div style={{ fontSize:12, opacity:0.9, marginTop:4, background:'rgba(255,255,255,0.15)', padding:'3px 10px', borderRadius:20, display:'inline-block' }}>
+                📍 {agent.location_id} {agent.location_name ? `— ${agent.location_name}` : ''}
+              </div>
+            )}
           </div>
           <div style={{ textAlign:'right' }}>
             <span style={{ padding:'6px 14px', borderRadius:20, background:'rgba(255,255,255,0.2)', fontSize:12, fontWeight:700 }}>
