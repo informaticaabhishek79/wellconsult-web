@@ -23,12 +23,12 @@ export default function DoctorEarningsDashboard() {
 
   if (isLoading) return <div style={{ padding:40, textAlign:'center', color:'var(--text-muted)' }}>Loading earnings...</div>;
 
-  const totalEarnings = stats?.total_earnings || 0;
-  const pendingEarnings = stats?.pending_earnings || 0;
-  const totalConsultations = stats?.total_consultations || 0;
-  const completedConsultations = stats?.completed_consultations || 0;
+  const totalEarnings = parseFloat(stats?.total_earnings || 0);
+  const pendingEarnings = parseFloat(stats?.pending_earnings || 0);
+  const totalConsultations = parseInt(stats?.total_consultations || 0);
+  const completedConsultations = parseInt(stats?.completed_consultations || 0);
   const avgRating = stats?.avg_rating || 0;
-  const platformFee = totalEarnings * 0.10; // 10% platform fee
+  const platformFee = totalEarnings * 0.10;
   const netEarnings = totalEarnings - platformFee;
 
   return (
