@@ -266,9 +266,9 @@ export default function AuthPage() {
         </div>
       )}
 
-      <div style={{ display:'flex', minHeight:'100vh', fontFamily:'var(--font-body)' }}>
+      <div className="auth-container" style={{ display:'flex', minHeight:'100vh', fontFamily:'var(--font-body)' }}>
         {/* Left panel */}
-        <div style={{ flex:'0 0 55%', background:'linear-gradient(135deg,#0A5C52,#0A7B6C,#0E9E8A)', display:'flex', flexDirection:'column', justifyContent:'center', padding:'60px 64px', position:'relative', overflow:'hidden' }}>
+        <div className="auth-hero" style={{ flex:'0 0 55%', background:'linear-gradient(135deg,#0A5C52,#0A7B6C,#0E9E8A)', display:'flex', flexDirection:'column', justifyContent:'center', padding:'60px 64px', position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }}/>
           <div style={{ position:'absolute', bottom:-120, left:-60, width:400, height:400, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
           <div style={{ position:'relative', zIndex:1 }}>
