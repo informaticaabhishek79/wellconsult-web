@@ -59,14 +59,17 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
     if (!isEmergency && !selSlot) { setMsg('Please select a time slot.'); return; }
     setLoading(true); setMsg('');
     try {
-      // Step 1: Get fee before creating appointment
       const consultType = isEmergency ? 'video' : (selType || 'video');
-      const { data: feeResp } = await api.get(`/payments/fees/calculate?doctor_id=${doctorId}&consult_type=${consultType}`);
-      const feeData = feeResp.data;
-      const fee = feeData?.final_fee || 0;
+
+      // Step 1: Get fee
+      let fee = 0;
+      try {
+        const { data: feeResp } = await api.get(`/payments/fees/calculate?doctor_id=${doctorId}&consult_type=${consultType}`);
+        fee = feeResp.data?.final_fee || 0;
+      } catch { fee = 0; }
 
       if (fee > 0) {
-        // Load Razorpay first
+        // Step 2: Load Razorpay
         await new Promise<void>((resolve, reject) => {
           if (window.Razorpay) { resolve(); return; }
           const script = document.createElement('script');
@@ -76,26 +79,28 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
           document.head.appendChild(script);
         });
 
-        // Step 2: Create appointment with pending_payment status
-        const { data: apptData } = await api.post('/appointments', {
-          doctor_id:    doctorId,
-          appt_date:    isEmergency ? todayStr : selDate,
-          appt_time:    isEmergency ? now.toTimeString().slice(0,5) : selSlot,
-          consult_type: consultType,
-          is_emergency: isEmergency,
-          status:       'pending_payment',
-        });
-        const appointmentId = apptData.data?.id;
+        // Step 3: Create Razorpay order (without appointment yet)
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const Razorpay = window.Razorpay;
+        const rzpOrder = await (window as any).fetch(
+          'https://wellconsult-backend.onrender.com/api/v1/payments/create-direct-order',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            },
+            body: JSON.stringify({ amount: fee, doctor_id: doctorId, consult_type: consultType }),
+          }
+        ).then((r: any) => r.json());
 
-        // Step 3: Create Razorpay order
-        const { data: orderResp } = await api.post('/payments/create-order', { appointment_id: appointmentId });
-        const order = orderResp.data;
+        const order = rzpOrder.data;
 
-        // Step 4: Open Razorpay checkout
-        const rzp = new window.Razorpay({
+        // Step 4: Open Razorpay - create appointment ONLY on payment success
+        const rzp = new Razorpay({
           key: order.razorpay_key,
           amount: order.amount,
-          currency: order.currency,
+          currency: 'INR',
           order_id: order.order_id,
           name: 'Deemona Doctors',
           description: `${consultType} Consultation — ₹${fee}`,
@@ -103,26 +108,27 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
           theme: { color: '#0A7B6C' },
           handler: async (response: any) => {
             try {
-              await api.post('/payments/verify', {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                appointment_id: appointmentId,
+              // Payment done - now create the appointment
+              await api.post('/appointments', {
+                doctor_id:    doctorId,
+                appt_date:    isEmergency ? todayStr : selDate,
+                appt_time:    isEmergency ? now.toTimeString().slice(0,5) : selSlot,
+                consult_type: consultType,
+                is_emergency: isEmergency,
+                payment_ref:  response.razorpay_payment_id,
               });
               setBooked(true);
-            } catch { setMsg('Payment verification failed. Please contact support.'); }
+            } catch (err: any) {
+              setMsg('Payment done but booking failed. Contact support with payment ID: ' + response.razorpay_payment_id);
+            }
           },
-          modal: { ondismiss: () => {
-            // Cancel the pending appointment if payment dismissed
-            api.delete(`/appointments/${appointmentId}`).catch(() => {});
-            setLoading(false);
-          }},
+          modal: { ondismiss: () => setLoading(false) },
         });
         rzp.open();
-        return; // Don't setBooked yet - will be set in handler
+        return;
       }
 
-      // Free consultation - create and confirm directly
+      // Free - create appointment directly
       await api.post('/appointments', {
         doctor_id:    doctorId,
         appt_date:    isEmergency ? todayStr : selDate,
