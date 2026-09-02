@@ -28,7 +28,7 @@ const NAV_AGENT = [
   { icon:'📊', label:'Dashboard',      path:'/agent' },
   { icon:'👥', label:'My Referrals',   path:'/agent' },
   { icon:'📄', label:'Documents',      path:'/agent' },
-  { icon:'💰', label:'Earnings',       path:'/agent' },
+  { icon:'💰', label:'Earnings',        path:'/earnings' },
   { icon:'👤', label:'Profile',        path:'/profile' },
 ];
 
