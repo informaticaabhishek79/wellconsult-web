@@ -234,6 +234,7 @@ function AppContent() {
     if (user.role === 'doctor') {
       switch (path) {
         case '/dashboard':    return <DoctorDashboard onNav={onNav} />;
+        case '/earnings':     return <DoctorEarningsDashboard />;
         case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} onWritePrescription={(id, name) => setWritePrescription({appointmentId: id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
         case '/questions':    return <DoctorQuestionsPage />;
       case '/verification':  return <DoctorVerificationPage />;
