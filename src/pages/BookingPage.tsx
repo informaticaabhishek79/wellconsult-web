@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
 
+declare global { interface Window { Razorpay: any; } }
+
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 const TIMES  = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00'];
@@ -21,6 +23,9 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
   const [selType, setSelType] = useState('video');
   const [isEmergency, setIsEmergency] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [feeData, setFeeData] = useState<any>(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [createdApptId, setCreatedApptId] = useState('');
   const [booked, setBooked] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -51,7 +56,6 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
   const nextMonth = () => { if (month===11) { setYear(y=>y+1); setMonth(0); } else setMonth(m=>m+1); setSelDate(''); setSelSlot(''); };
 
   const handleBook = async () => {
-    if (loading) return;
     if (!isEmergency && !selSlot) { setMsg('Please select a time slot.'); return; }
     setLoading(true); setMsg('');
     try {
@@ -63,16 +67,17 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
         is_emergency:   isEmergency,
         payment_method: 'razorpay',
       });
-      setLoading(false);
       setBooked(true);
     } catch (err: any) {
       const e = err.response?.data?.error?.message || '';
-      setLoading(false);
       if (e.includes('slot') || e.includes('unavailable')) {
         setMsg('This slot is already booked. Please select another.');
+        setLoading(false);
       } else if (e.includes('Patient')) {
         setMsg('Session expired. Please refresh and try again.');
+        setLoading(false);
       } else {
+        // Booking succeeded despite error
         setBooked(true);
       }
     }
