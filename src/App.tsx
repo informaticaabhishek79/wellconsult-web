@@ -25,6 +25,7 @@ import MedicalRecordsPage from './pages/MedicalRecordsPage';
 import OnlineDoctors from './pages/OnlineDoctors';
 import ChatbotPage from './pages/ChatbotPage';
 import AgentOnboarding from './pages/AgentOnboarding';
+import DoctorEarningsDashboard from './pages/DoctorEarningsDashboard';
 import AgentDashboard from './pages/AgentDashboard';
 import AgentManagementAdmin from './pages/AgentManagementAdmin';
 import DoctorProfilePage from './pages/DoctorProfilePage';
@@ -50,7 +51,7 @@ function AppContent() {
     const token = localStorage.getItem('access_token');
     if (!token) return;
     import('socket.io-client').then(({ io }) => {
-      const s = io('https://wellconsult-backend.onrender.com', {
+      const s = io('https://deemona-doctors-backend.onrender.com', {
         auth: { token }, transports: ['websocket', 'polling'],
       });
       s.on('connect', () => console.log('[Presence] Socket connected, role:', user.role));
@@ -105,7 +106,7 @@ function AppContent() {
 
     if (oauthCode) {
       window.history.replaceState({}, '', window.location.pathname);
-      fetch('https://wellconsult-backend.onrender.com/api/v1/auth/google/token', {
+      fetch('https://deemona-doctors-backend.onrender.com/api/v1/auth/google/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: oauthCode }),
