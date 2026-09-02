@@ -21,6 +21,7 @@ const NAV_DOCTOR = [
   { icon:'💊', label:'Prescriptions', path:'/prescriptions' },
   { icon:'✅', label:'Verification',  path:'/verification' },
   { icon:'👥', label:'Patients',      path:'/patients' },
+  { icon:'💰', label:'Earnings',       path:'/earnings' },
   { icon:'👤', label:'Profile',       path:'/profile' },
 ];
 
@@ -28,7 +29,7 @@ const NAV_AGENT = [
   { icon:'📊', label:'Dashboard',      path:'/agent' },
   { icon:'👥', label:'My Referrals',   path:'/agent' },
   { icon:'📄', label:'Documents',      path:'/agent' },
-  { icon:'💰', label:'Earnings',        path:'/earnings' },
+  { icon:'💰', label:'Earnings',       path:'/agent' },
   { icon:'👤', label:'Profile',        path:'/profile' },
 ];
 
