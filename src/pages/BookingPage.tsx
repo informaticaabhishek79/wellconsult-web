@@ -59,13 +59,76 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
     if (!isEmergency && !selSlot) { setMsg('Please select a time slot.'); return; }
     setLoading(true); setMsg('');
     try {
+      // Step 1: Get fee before creating appointment
+      const consultType = isEmergency ? 'video' : (selType || 'video');
+      const { data: feeResp } = await api.get(`/payments/fees/calculate?doctor_id=${doctorId}&consult_type=${consultType}`);
+      const feeData = feeResp.data;
+      const fee = feeData?.final_fee || 0;
+
+      if (fee > 0) {
+        // Load Razorpay first
+        await new Promise<void>((resolve, reject) => {
+          if (window.Razorpay) { resolve(); return; }
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Razorpay failed to load'));
+          document.head.appendChild(script);
+        });
+
+        // Step 2: Create appointment with pending_payment status
+        const { data: apptData } = await api.post('/appointments', {
+          doctor_id:    doctorId,
+          appt_date:    isEmergency ? todayStr : selDate,
+          appt_time:    isEmergency ? now.toTimeString().slice(0,5) : selSlot,
+          consult_type: consultType,
+          is_emergency: isEmergency,
+          status:       'pending_payment',
+        });
+        const appointmentId = apptData.data?.id;
+
+        // Step 3: Create Razorpay order
+        const { data: orderResp } = await api.post('/payments/create-order', { appointment_id: appointmentId });
+        const order = orderResp.data;
+
+        // Step 4: Open Razorpay checkout
+        const rzp = new window.Razorpay({
+          key: order.razorpay_key,
+          amount: order.amount,
+          currency: order.currency,
+          order_id: order.order_id,
+          name: 'Deemona Doctors',
+          description: `${consultType} Consultation — ₹${fee}`,
+          prefill: { name: order.patient_name, email: order.email, contact: order.phone },
+          theme: { color: '#0A7B6C' },
+          handler: async (response: any) => {
+            try {
+              await api.post('/payments/verify', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                appointment_id: appointmentId,
+              });
+              setBooked(true);
+            } catch { setMsg('Payment verification failed. Please contact support.'); }
+          },
+          modal: { ondismiss: () => {
+            // Cancel the pending appointment if payment dismissed
+            api.delete(`/appointments/${appointmentId}`).catch(() => {});
+            setLoading(false);
+          }},
+        });
+        rzp.open();
+        return; // Don't setBooked yet - will be set in handler
+      }
+
+      // Free consultation - create and confirm directly
       await api.post('/appointments', {
-        doctor_id:      doctorId,
-        appt_date:      isEmergency ? todayStr : selDate,
-        appt_time:      isEmergency ? now.toTimeString().slice(0,5) : selSlot,
-        consult_type:   isEmergency ? 'video' : selType,
-        is_emergency:   isEmergency,
-        payment_method: 'razorpay',
+        doctor_id:    doctorId,
+        appt_date:    isEmergency ? todayStr : selDate,
+        appt_time:    isEmergency ? now.toTimeString().slice(0,5) : selSlot,
+        consult_type: consultType,
+        is_emergency: isEmergency,
       });
       setBooked(true);
     } catch (err: any) {
