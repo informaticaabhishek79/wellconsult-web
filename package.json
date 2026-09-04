@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.56.0",
+    "agora-rtc-sdk-ng": "^4.24.8",
     "axios": "^1.7.5",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.441.0",
