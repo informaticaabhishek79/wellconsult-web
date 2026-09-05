@@ -57,7 +57,7 @@ export default function SubscriptionPage() {
         subscription_id: sub.subscription_id,
         name: 'Deemona Doctors',
         description: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan — ₹${sub.amount / 100}/month`,
-        image: 'https://deemona.com/favicon.ico',
+        image: 'https://doctors.deemona.com/favicon.ico',
         prefill: {
           name: sub.user_name,
           email: sub.user_email,

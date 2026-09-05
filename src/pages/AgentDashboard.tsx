@@ -122,9 +122,9 @@ export default function AgentDashboard() {
           <div style={{ fontSize:14, fontWeight:700, marginBottom:8 }}>🔗 Your Referral Link</div>
           <div style={{ display:'flex', gap:8, alignItems:'center' }}>
             <div style={{ flex:1, padding:'8px 12px', borderRadius:'var(--r-md)', background:'var(--bg)', fontSize:12, fontFamily:'monospace', color:'var(--text-secondary)', wordBreak:'break-all' as any }}>
-              https://deemona.com?ref={agent.agent_code}
+              https://doctors.deemona.com?ref={agent.agent_code}
             </div>
-            <button onClick={() => navigator.clipboard.writeText(`https://deemona.com?ref=${agent.agent_code}`)}
+            <button onClick={() => navigator.clipboard.writeText(`https://doctors.deemona.com?ref=${agent.agent_code}`)}
               style={{ padding:'8px 14px', borderRadius:'var(--r-md)', border:'1px solid var(--primary)', background:'var(--primary-light)', color:'var(--primary)', fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
               📋 Copy
             </button>
