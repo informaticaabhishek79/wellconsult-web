@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_BASE = 'https://yourdomain.com/api/v1';
+export const API_BASE = 'https://doctors.deemona.com/api/v1';
 
 const isWeb = typeof window !== 'undefined';
 
