@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../store';
 import { TokenStorage, api } from '../api';
 
-const SOCKET_URL = 'https://wellconsult-backend.onrender.com';
+const SOCKET_URL = 'https://yourdomain.com';
 
 interface Message {
   id: string;

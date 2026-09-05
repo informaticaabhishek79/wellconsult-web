@@ -83,7 +83,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const Razorpay = window.Razorpay;
         const rzpOrder = await (window as any).fetch(
-          'https://wellconsult-backend.onrender.com/api/v1/payments/create-direct-order',
+          'https://yourdomain.com/api/v1/payments/create-direct-order',
           {
             method: 'POST',
             headers: {
