@@ -35,6 +35,7 @@ export default function AppointmentsPage({ onBook, onChat, onVideo }: {
   const past     = all.filter((a: any) => ['completed','cancelled','no_show'].includes(a.status));
   const list     = tab === 'upcoming' ? upcoming : past;
 
+    const handleRefundAndCancel = async (id: string) => { if (!window.confirm('Cancel this appointment? If you paid, a full refund will be initiated automatically.')) return; try { await api.post('/payments/refund', { appointment_id: id, reason: 'Patient cancelled' }).catch(() => {}); await api.post('/appointments/' + id + '/cancel', { reason: 'Cancelled by patient' }); alert('Appointment cancelled. Refund (if applicable) will be processed within 5-7 business days.'); } catch (err) { alert('Failed to cancel.'); } };
   const handleCancel = async (appt: any) => {
     if (!window.confirm(`Cancel your ${appt.consult_type} consultation with ${appt.doctor_name} on ${appt.appt_date?.slice(0,10)}?\n\nRefund processed in 3-5 business days.`)) return;
     try {
