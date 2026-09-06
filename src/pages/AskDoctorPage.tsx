@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import { useAuth } from '../store';
+import { useNavigate } from 'react-router-dom';
 
 const SPECIALTIES = [
   { id:'allopathy',   label:'Allopathy',    icon:'⚕️' },
@@ -13,6 +14,13 @@ const SPECIALTIES = [
 ];
 
 export default function AskDoctorPage() {
+  const { data: confirmedAppointments, isLoading: checkingAppts } = useQuery({
+    queryKey: ['confirmed-appointments-check'],
+    queryFn: async () => {
+      const { data } = await api.get('/patients/me/appointments');
+      return (data.data || []).filter((a: any) => a.status === 'confirmed' || a.status === 'completed');
+    },
+  });
   const { user } = useAuth();
   const qc = useQueryClient();
   const [view, setView] = useState<'list'|'ask'>('list');
