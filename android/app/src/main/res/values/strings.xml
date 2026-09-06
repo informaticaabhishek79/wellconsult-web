@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Deemona Doctors</string>
+    <string name="title_activity_main">Deemona Doctors</string>
+    <string name="package_name">com.deemona.doctors</string>
+    <string name="custom_url_scheme">com.deemona.doctors</string>
+</resources>
