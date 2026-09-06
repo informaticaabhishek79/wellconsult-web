@@ -14,6 +14,13 @@ const SPECIALTIES = [
 ];
 
 export default function AskDoctorPage() {
+  const { data: confirmedAppts, isLoading: checkingAppts } = useQuery({
+    queryKey: ['confirmed-appts-check'],
+    queryFn: async () => {
+      const { data } = await api.get('/patients/me/appointments');
+      return (data.data || []).filter((a: any) => a.status === 'confirmed' || a.status === 'completed');
+    },
+  });
   const { data: confirmedAppointments, isLoading: checkingAppts } = useQuery({
     queryKey: ['confirmed-appointments-check'],
     queryFn: async () => {
@@ -68,6 +75,19 @@ export default function AskDoctorPage() {
     answered:  { bg: '#ECFDF5', color: '#065F46', label: 'Answered' },
     closed:    { bg: '#F9FAFB', color: '#374151', label: 'Closed' },
   };
+
+  if (checkingAppts) return <div style={{ padding:40, textAlign:'center' }}>Checking access...</div>;
+
+  if (!confirmedAppts || confirmedAppts.length === 0) {
+    return (
+      <div style={{ maxWidth:500, margin:'60px auto', textAlign:'center', padding:24, fontFamily:'var(--font-body)' }}>
+        <div style={{ fontSize:56, marginBottom:16 }}>🔒</div>
+        <h2 style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700, marginBottom:8 }}>Consultation Required</h2>
+        <p style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24, lineHeight:1.7 }}>Ask a Doctor is only available after booking and paying for a consultation.</p>
+        <button onClick={() => window.history.back()} style={{ padding:'12px 28px', borderRadius:'8px', border:'none', background:'var(--primary)', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>Book a Consultation</button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 700, margin: '0 auto', padding: '28px 24px', fontFamily: 'var(--font-body)' }}>
