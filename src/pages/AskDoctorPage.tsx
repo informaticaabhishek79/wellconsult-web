@@ -21,13 +21,7 @@ export default function AskDoctorPage() {
       return (data.data || []).filter((a: any) => a.status === 'confirmed' || a.status === 'completed');
     },
   });
-  const { data: confirmedAppointments, isLoading: checkingAppts } = useQuery({
-    queryKey: ['confirmed-appointments-check'],
-    queryFn: async () => {
-      const { data } = await api.get('/patients/me/appointments');
-      return (data.data || []).filter((a: any) => a.status === 'confirmed' || a.status === 'completed');
-    },
-  });
+
   const { user } = useAuth();
   const qc = useQueryClient();
   const [view, setView] = useState<'list'|'ask'>('list');
