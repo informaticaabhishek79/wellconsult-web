@@ -257,7 +257,7 @@ function AppContent() {
       case '/agent/join':  return <AgentOnboarding onSuccess={() => onNav('/agent')} />;
       case '/doctors':      return <DoctorSearch initial={state} onBook={id => setBookingDoctorId(id)} onViewProfile={id => setViewingDoctorId(id)} />;
       case '/appointments': return user.role === 'doctor' ? <DoctorAppointmentsPage onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, patientName: name})} onWritePrescription={(id, name) => setWritePrescription({appointmentId: id, patientName: name})} /> : <AppointmentsPage onBook={() => onNav('/doctors')} onChat={(id, name) => setChatAppointment({id, doctorName: name})} onVideo={(id, name) => setVideoCall({id, doctorName: name})} />;
-      case '/ask':          return <AskDoctorPage />;
+      case '/ask':          return <AskDoctorPage onNav={onNav} />;
       case '/prescriptions': return <PrescriptionsPage />;
       case '/records':       return <MedicalRecordsPage />;
       case '/history':       return <MedicalHistoryPage />;

@@ -13,7 +13,7 @@ const SPECIALTIES = [
   { id:'unani',       label:'Unani',        icon:'⚗️' },
 ];
 
-export default function AskDoctorPage() {
+export default function AskDoctorPage({ onNav }: { onNav?: (path: string) => void }) {
   const { data: confirmedAppts, isLoading: checkingAppts } = useQuery({
     queryKey: ['confirmed-appts-check'],
     queryFn: async () => {
@@ -78,7 +78,7 @@ export default function AskDoctorPage() {
         <div style={{ fontSize:56, marginBottom:16 }}>🔒</div>
         <h2 style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700, marginBottom:8 }}>Consultation Required</h2>
         <p style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24, lineHeight:1.7 }}>Ask a Doctor is only available after booking and paying for a consultation.</p>
-        <button onClick={() => { window.location.href = '/'; } style={{ padding:'12px 28px', borderRadius:'8px', border:'none', background:'var(--primary)', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>Book a Consultation</button>
+        <button onClick={() => onNav ? onNav('/doctors') : window.location.href = '/'} style={{ padding:'12px 28px', borderRadius:'8px', border:'none', background:'var(--primary)', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>Book a Consultation</button>
       </div>
     );
   }
