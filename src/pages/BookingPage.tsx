@@ -258,7 +258,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
           {fee > 0 && (
             <div style={{ background:'var(--primary-light)', borderRadius:'var(--r-lg)', padding:14, border:'1px solid #A7D9D3' }}>
               <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>Consultation fee</div>
-              <div style={{ fontSize:26, fontWeight:800, color:'var(--primary)', fontFamily:'var(--font-display)' }}>₹{(fee/100).toFixed(0)}</div>
+              <div style={{ fontSize:26, fontWeight:800, color:'var(--primary)', fontFamily:'var(--font-display)' }}>₹{fee.toFixed(0)}</div>
               {isEmergency && <div style={{ fontSize:11, color:'var(--error)', fontWeight:500, marginTop:2 }}>Emergency 1.5x surcharge applied</div>}
             </div>
           )}
