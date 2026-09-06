@@ -41,15 +41,21 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
     staleTime: 0,
   });
 
+
+  const { data: feeData } = useQuery({
+    queryKey: ['platform-fees'],
+    queryFn: async () => { const { data } = await api.get('/payments/fees'); return data.data; },
+  });
+
   const availSlots  = avail?.available_slots?.filter((s: any) => !s.is_booked).map((s: any) => (s.slot_start||'').slice(0,5)) || [];
   const bookedSlots = avail?.available_slots?.filter((s: any) => s.is_booked).map((s: any) => (s.slot_start||'').slice(0,5)) || [];
 
   const getFee = () => {
-    if (!doctor?.fees) return 0;
-    const fee = doctor.fees.find((f: any) => f.type === (isEmergency ? 'video' : selType));
-    return isEmergency ? Math.round((fee?.fee||0)*1.5) : (fee?.fee||0);
+    if (!feeData) return 0;
+    const consultType = isEmergency ? 'video' : (selType || 'video');
+    const fee = feeData?.find((f: any) => f.consult_type === consultType)?.fee || 0;
+    return isEmergency ? Math.round(parseFloat(fee) * 1.5) : parseFloat(fee);
   };
-
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const firstDay    = new Date(year, month, 1).getDay();
   const prevMonth = () => { if (month===0) { setYear(y=>y-1); setMonth(11); } else setMonth(m=>m-1); setSelDate(''); setSelSlot(''); };
