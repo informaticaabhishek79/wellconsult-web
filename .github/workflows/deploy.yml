@@ -1,0 +1,93 @@
+name: Deploy to MilesWeb
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-frontend:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to MilesWeb via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 103.212.121.63
+          username: doctors_1
+          password: ${{ secrets.MILESWEB_SSH_PASSWORD }}
+          port: 22
+          source: "dist/*"
+          target: "~/public_html/"
+          strip_components: 1
+
+      - name: Update index.html
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 103.212.121.63
+          username: doctors_1
+          password: ${{ secrets.MILESWEB_SSH_PASSWORD }}
+          port: 22
+          script: |
+            JS_FILE=$(ls ~/public_html/assets/index-*.js | head -1 | xargs basename)
+            CSS_FILE=$(ls ~/public_html/assets/index-*.css | head -1 | xargs basename)
+            cat > ~/public_html/index.html << EOF
+            <!doctype html>
+            <html lang="en">
+              <head>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>Deemona Doctors — Holistic Healthcare, Digitally</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+                <script type="module" crossorigin src="/assets/$JS_FILE"></script>
+                <link rel="stylesheet" crossorigin href="/assets/$CSS_FILE">
+              </head>
+              <body>
+                <div id="root"></div>
+              </body>
+            </html>
+            EOF
+            echo "Deployed: $JS_FILE"
+
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy backend via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 103.212.121.63
+          username: doctors_1
+          password: ${{ secrets.MILESWEB_SSH_PASSWORD }}
+          port: 22
+          script: |
+            cd ~/deemona-backend
+            git pull origin main
+            npm install --legacy-peer-deps
+            chmod +x ./node_modules/.bin/tsc
+            ./node_modules/.bin/tsc --skipLibCheck
+            # Fix API base path
+            python3 -c "
+            with open('dist/app.js', 'r') as f:
+                c = f.read()
+            c = c.replace('const base = \`/api/\${env_1.env.API_VERSION}\`;', 'const base = \`/\${env_1.env.API_VERSION}\`;')
+            with open('dist/app.js', 'w') as f:
+                f.write(c)
+            print('API path fixed')
+            "
+            echo "Backend deployed"
