@@ -42,7 +42,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
   });
 
 
-  const { data: feeData } = useQuery({
+  const { data: platformFees } = useQuery({
     queryKey: ['platform-fees'],
     queryFn: async () => { const { data } = await api.get('/payments/fees'); return data.data; },
   });
@@ -53,7 +53,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
   const getFee = () => {
     if (!feeData) return 0;
     const consultType = isEmergency ? 'video' : (selType || 'video');
-    const fee = feeData?.find((f: any) => f.consult_type === consultType)?.fee || 0;
+    const fee = platformFees?.find((f: any) => f.consult_type === consultType)?.fee || 0;
     return isEmergency ? Math.round(parseFloat(fee) * 1.5) : parseFloat(fee);
   };
   const daysInMonth = new Date(year, month+1, 0).getDate();
