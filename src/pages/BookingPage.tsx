@@ -66,85 +66,11 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
     setLoading(true); setMsg('');
     try {
       const consultType = isEmergency ? 'video' : (selType || 'video');
-
-      // Step 1: Get fee
-      let fee = 0;
-      try {
-        const { data: feeResp } = await api.get(`/payments/fees/calculate?doctor_id=${doctorId}&consult_type=${consultType}`);
-        fee = parseFloat(feeResp.data?.final_fee || 0);
-      } catch { fee = 0; }
-
-      if (fee > 0) {
-        // Step 2: Load Razorpay
-        await new Promise<void>((resolve, reject) => {
-          if (window.Razorpay) { resolve(); return; }
-          const script = document.createElement('script');
-          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Razorpay failed to load'));
-          document.head.appendChild(script);
-        });
-
-        // Step 3: Create Razorpay order (without appointment yet)
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const Razorpay = window.Razorpay;
-        const rzpOrder = await (window as any).fetch(
-          'https://doctors.deemona.com/api/v1/payments/create-direct-order',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            },
-                consult_type: capturedConsultType,
-          }
-        ).then((r: any) => r.json());
-
-        const order = rzpOrder.data;
-
-        // Capture state values before async Razorpay handler
-        const capturedDate = isEmergency ? todayStr : selDate;
-        const capturedSlot = isEmergency ? now.toTimeString().slice(0,5) : selSlot;
-        const capturedConsultType = consultType;
-        const capturedDoctorId = doctorId;
-        // Step 4: Open Razorpay - create appointment ONLY on payment success
-        const rzp = new Razorpay({
-          key: order.razorpay_key,
-          amount: order.amount,
-          currency: 'INR',
-          order_id: order.order_id,
-          name: 'Deemona Doctors',
-          description: `${consultType} Consultation — ₹${fee}`,
-          prefill: { name: order.patient_name, email: order.email, contact: order.phone },
-          theme: { color: '#0A7B6C' },
-          handler: async (response: any) => {
-            try {
-              // Payment done - now create the appointment
-              await api.post('/appointments', {
-                doctor_id:    capturedDoctorId,
-                appt_date:    capturedDate,
-                appt_time:    capturedSlot,
-                consult_type: capturedConsultType,
-                is_emergency: isEmergency,
-                payment_ref:  response.razorpay_payment_id,
-              });
-              setBooked(true);
-            } catch (err: any) {
-              setMsg('Payment done but booking failed. Contact support with payment ID: ' + response.razorpay_payment_id);
-            }
-          },
-          modal: { ondismiss: () => setLoading(false) },
-        });
-        rzp.open();
-        return;
-      }
-
-      // Free - create appointment directly
       await api.post('/appointments', {
-                doctor_id:    capturedDoctorId,
-                appt_date:    capturedDate,
-                appt_time:    capturedSlot,
-                consult_type: capturedConsultType,
+        doctor_id:    doctorId,
+        appt_date:    isEmergency ? todayStr : selDate,
+        appt_time:    isEmergency ? now.toTimeString().slice(0,5) : selSlot,
+        consult_type: consultType,
         is_emergency: isEmergency,
       });
       setBooked(true);
@@ -152,15 +78,10 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
       const e = err.response?.data?.error?.message || '';
       if (e.includes('slot') || e.includes('unavailable')) {
         setMsg('This slot is already booked. Please select another.');
-        setLoading(false);
-      } else if (e.includes('Patient')) {
-        setMsg('Session expired. Please refresh and try again.');
-        setLoading(false);
       } else {
-        // Booking succeeded despite error
-        setBooked(true);
+        setMsg(e || 'Booking failed. Please try again.');
       }
-    }
+    } finally { setLoading(false); }
   };
 
   // Show success screen when booked
