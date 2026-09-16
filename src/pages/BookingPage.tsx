@@ -96,12 +96,17 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             },
-            body: JSON.stringify({ amount: fee, doctor_id: doctorId, consult_type: consultType }),
+                consult_type: capturedConsultType,
           }
         ).then((r: any) => r.json());
 
         const order = rzpOrder.data;
 
+        // Capture state values before async Razorpay handler
+        const capturedDate = isEmergency ? todayStr : selDate;
+        const capturedSlot = isEmergency ? now.toTimeString().slice(0,5) : selSlot;
+        const capturedConsultType = consultType;
+        const capturedDoctorId = doctorId;
         // Step 4: Open Razorpay - create appointment ONLY on payment success
         const rzp = new Razorpay({
           key: order.razorpay_key,
@@ -116,10 +121,10 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
             try {
               // Payment done - now create the appointment
               await api.post('/appointments', {
-                doctor_id:    doctorId,
-                appt_date:    isEmergency ? todayStr : selDate,
-                appt_time:    isEmergency ? now.toTimeString().slice(0,5) : selSlot,
-                consult_type: consultType,
+                doctor_id:    capturedDoctorId,
+                appt_date:    capturedDate,
+                appt_time:    capturedSlot,
+                consult_type: capturedConsultType,
                 is_emergency: isEmergency,
                 payment_ref:  response.razorpay_payment_id,
               });
@@ -136,10 +141,10 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
 
       // Free - create appointment directly
       await api.post('/appointments', {
-        doctor_id:    doctorId,
-        appt_date:    isEmergency ? todayStr : selDate,
-        appt_time:    isEmergency ? now.toTimeString().slice(0,5) : selSlot,
-        consult_type: consultType,
+                doctor_id:    capturedDoctorId,
+                appt_date:    capturedDate,
+                appt_time:    capturedSlot,
+                consult_type: capturedConsultType,
         is_emergency: isEmergency,
       });
       setBooked(true);
