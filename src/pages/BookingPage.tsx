@@ -71,7 +71,7 @@ export default function BookingPage({ doctorId, onBack, onSuccess }: { doctorId:
       let fee = 0;
       try {
         const { data: feeResp } = await api.get(`/payments/fees/calculate?doctor_id=${doctorId}&consult_type=${consultType}`);
-        fee = feeResp.data?.final_fee || 0;
+        fee = parseFloat(feeResp.data?.final_fee || 0);
       } catch { fee = 0; }
 
       if (fee > 0) {
