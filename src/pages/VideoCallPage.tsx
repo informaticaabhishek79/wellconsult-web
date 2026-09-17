@@ -65,8 +65,8 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
 
   const startCall = async () => {
     setStatus('connecting'); setError('');
+    await cleanup();
     try {
-      // Get Agora token from backend
       const { data } = await api.post('/agora/token', { channel_name: channelName });
       const { token, app_id, uid } = data.data;
 
@@ -272,3 +272,4 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
     </div>
   );
 }
+
