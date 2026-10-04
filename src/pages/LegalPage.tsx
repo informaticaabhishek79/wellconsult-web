@@ -5,7 +5,7 @@ export default function LegalPage({ slug, onBack }: { slug: string; onBack: () =
   const { data: page, isLoading, isError } = useQuery({
     queryKey: ['legal-page', slug],
     queryFn: async () => {
-      const { data } = await api.get(`/legal/${slug}`);
+      const { data } = await fetch(`https://doctors.deemona.com/api/v1/legal/${slug}`).then(r => r.json()).then(d => ({ data: d }));
       return data.data;
     },
   });
