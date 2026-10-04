@@ -182,6 +182,12 @@ function AppContent() {
       .catch(() => setNeedsOnboarding(false));
   }, [user?.id]);
 
+  // Public pages accessible without login
+  const publicPath = window.location.search;
+  const pageParam = new URLSearchParams(publicPath).get('page');
+  if (!user && (pageParam === 'terms' || pageParam === 'privacy' || pageParam === 'refund-policy' || pageParam === 'contact')) {
+    return <LegalPage slug={pageParam === 'contact' ? 'contact' : pageParam === 'terms' ? 'terms' : pageParam === 'privacy' ? 'privacy' : 'refund-policy'} onBack={() => window.location.href = '/'} />;
+  }
   if (!user) return <AuthPage />;
 
   // Wait for onboarding check
