@@ -40,7 +40,7 @@ const STEPS: Step[] = [
 ];
 
 export default function DoctorOnboarding({ onComplete }: { onComplete: () => void }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -159,8 +159,12 @@ export default function DoctorOnboarding({ onComplete }: { onComplete: () => voi
           </div>
           <span style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>Deemona Doctors</span>
         </div>
-        <div style={{ marginLeft:'auto', fontSize:13, color:'var(--text-muted)' }}>
-          Step {step+1} of {STEPS.length}
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:16 }}>
+          <span style={{ fontSize:13, color:'var(--text-muted)' }}>Step {step+1} of {STEPS.length}</span>
+          <button type="button" onClick={() => { if (window.confirm('Sign out? Your progress on this page will not be saved.')) logout(); }}
+            style={{ padding:'7px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', background:'#fff', fontSize:13, fontWeight:500, cursor:'pointer', color:'var(--text-secondary)' }}>
+            Sign out
+          </button>
         </div>
       </div>
 
@@ -361,6 +365,11 @@ export default function DoctorOnboarding({ onComplete }: { onComplete: () => voi
 
           {/* Navigation */}
           <div style={{ display:'flex', gap:10, marginTop:28 }}>
+            {step === 0 && (
+              <button type="button" onClick={() => { if (window.confirm('Sign out? Your progress on this page will not be saved.')) logout(); }} style={{ padding:'12px 24px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', background:'#fff', fontSize:14, fontWeight:500, cursor:'pointer', color:'var(--text-secondary)' }}>
+                Cancel &amp; sign out
+              </button>
+            )}
             {step > 0 && (
               <button onClick={() => setStep(s => s-1)} style={{ padding:'12px 24px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', background:'#fff', fontSize:14, fontWeight:500, cursor:'pointer', color:'var(--text-secondary)' }}>
                 ← Back

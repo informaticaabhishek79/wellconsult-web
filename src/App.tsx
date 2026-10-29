@@ -25,6 +25,7 @@ import MedicalRecordsPage from './pages/MedicalRecordsPage';
 import OnlineDoctors from './pages/OnlineDoctors';
 import ChatbotPage from './pages/ChatbotPage';
 import AgentOnboarding from './pages/AgentOnboarding';
+import AgentGate from './pages/AgentGate';
 import DoctorEarningsDashboard from './pages/DoctorEarningsDashboard';
 import SubscriptionPage from './pages/SubscriptionPage';
 import AgentDashboard from './pages/AgentDashboard';
@@ -53,7 +54,7 @@ function AppContent() {
     if (!token) return;
     import('socket.io-client').then(({ io }) => {
       const s = io('https://doctors.deemona.com', {
-        auth: { token }, transports: ['websocket', 'polling'],
+        auth: { token }, path: '/api/socket.io', transports: ['polling'],
       });
       s.on('connect', () => console.log('[Presence] Socket connected, role:', user.role));
       s.on('connect_error', (err: any) => console.log('[Presence] Socket error:', err.message));
@@ -185,6 +186,7 @@ function AppContent() {
   // Public pages accessible without login
   const publicPath = window.location.search;
   const pageParam = new URLSearchParams(publicPath).get('page');
+  console.log('[Public] user:', !!user, 'pageParam:', pageParam);
   if (!user && (pageParam === 'terms' || pageParam === 'privacy' || pageParam === 'refund-policy' || pageParam === 'contact')) {
     return <LegalPage slug={pageParam === 'contact' ? 'contact' : pageParam === 'terms' ? 'terms' : pageParam === 'privacy' ? 'privacy' : 'refund-policy'} onBack={() => window.location.href = '/'} />;
   }
@@ -252,6 +254,8 @@ function AppContent() {
         default:              return <DoctorDashboard onNav={onNav} />;
       }
     }
+
+    if (user.role === 'agent') return <AgentGate />;
 
     // Patient
     switch (path) {

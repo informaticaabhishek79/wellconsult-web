@@ -34,7 +34,7 @@ export default function VideoCallPage({ appointmentId, doctorName, patientName, 
     // Setup socket for chat
     const token = TokenStorage.get('access_token');
     const s = io('https://doctors.deemona.com', {
-      auth: { token }, transports: ['websocket', 'polling'],
+      auth: { token }, path: '/api/socket.io', transports: ['polling'],
     });
     socketRef.current = s;
     s.on('message_history', (msgs: any[]) => setMessages(msgs));

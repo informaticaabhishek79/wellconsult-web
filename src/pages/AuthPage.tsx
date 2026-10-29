@@ -13,6 +13,9 @@ const SPECIALTIES = [
   { id: 'unani',       label: 'Unani',        icon: '⚗️' },
 ];
 
+const PW_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+const PW_HINT = 'Password must be 8+ characters with an uppercase letter, a lowercase letter, a number and one of @ $ ! % * ? &';
+
 function Field({ label, type='text', placeholder, value, onChange }: {
   label: string; type?: string; placeholder: string;
   value: string; onChange: (v: string) => void;
@@ -91,6 +94,37 @@ export default function AuthPage() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
+  // Email verification
+  const [showVerify, setShowVerify] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState('');
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifyMsg, setVerifyMsg] = useState('');
+  const [verifyErr, setVerifyErr] = useState('');
+  const [verifyBusy, setVerifyBusy] = useState(false);
+
+  const openVerify = (em: string) => { setVerifyEmail(em); setVerifyCode(''); setVerifyMsg(''); setVerifyErr(''); setShowVerify(true); };
+  const handleVerify = async () => {
+    setVerifyErr(''); setVerifyMsg('');
+    if (!/^\d{6}$/.test(verifyCode.trim())) { setVerifyErr('Enter the 6-digit code.'); return; }
+    setVerifyBusy(true);
+    try {
+      await api.post('/auth/verify-email', { email: verifyEmail, otp_code: verifyCode.trim() });
+      setShowVerify(false); setMode('login'); setEmail(verifyEmail); setError('');
+      setRegSuccess('Email verified! You can now sign in.');
+    } catch (err: any) {
+      setVerifyErr(err.response?.data?.error?.message || 'Verification failed. Try again.');
+    } finally { setVerifyBusy(false); }
+  };
+  const handleResend = async () => {
+    setVerifyErr(''); setVerifyMsg('');
+    try {
+      await api.post('/auth/resend-verification', { email: verifyEmail });
+      setVerifyMsg('A new code has been sent. Check your inbox and spam folder.');
+    } catch (err: any) {
+      setVerifyErr(err.response?.status === 429 ? 'Too many attempts. Please wait a few minutes.' : 'Could not send a code. Try again.');
+    }
+  };
+
   useEffect(() => {
     console.log('[OAuth] href:', window.location.href);
     const params = new URLSearchParams(window.location.search);
@@ -119,16 +153,17 @@ export default function AuthPage() {
     e.preventDefault();
     setError('');
     await login(email, password);
-    setTimeout(() => { const e = useAuth.getState().error; if (e) setError(e); }, 100);
+    setTimeout(() => { const e = useAuth.getState().error; if (e) { setError(e); if (/verify your email/i.test(e)) openVerify(email); } }, 100);
   };
 
   const handlePatientRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pPassword !== pConfirm) { setError('Passwords do not match.'); return; }
+    if (!PW_RULE.test(pPassword)) { setError(PW_HINT); return; }
     setError(''); setLoading(true);
     try {
       await api.post('/auth/register', { full_name: pName, email: pEmail, phone: pPhone, password: pPassword, role: 'patient' });
-      setRegSuccess('Account created! You can now sign in.');
+      setRegSuccess('Account created! Enter the code we emailed you.'); openVerify(pEmail);
       setMode('login'); setEmail(pEmail);
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Registration failed.');
@@ -149,7 +184,7 @@ export default function AuthPage() {
       await api.post('/auth/register', { full_name: aName, email, phone: aPhone, password, role: 'agent' });
       // Also register as marketing agent
       await api.post('/agents/register', { full_name: aName, phone: aPhone, city: aCity, state: aState });
-      setRegSuccess('Agent account created! You can now sign in.');
+      setRegSuccess('Agent account created! Enter the code we emailed you.'); openVerify(email);
       setMode('login'); setEmail(email);
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Registration failed.');
@@ -159,10 +194,11 @@ export default function AuthPage() {
   const handleDoctorRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (dPassword !== dConfirm) { setError('Passwords do not match.'); return; }
+    if (!PW_RULE.test(dPassword)) { setError(PW_HINT); return; }
     setError(''); setLoading(true);
     try {
       await api.post('/auth/register', { full_name: dName, email: dEmail, phone: dPhone, password: dPassword, role: 'doctor', medical_system: dSystem });
-      setRegSuccess('Doctor account created! You can now sign in.');
+      setRegSuccess('Doctor account created! Enter the code we emailed you.'); openVerify(dEmail);
       setMode('login'); setEmail(dEmail);
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Registration failed.');
@@ -233,6 +269,28 @@ export default function AuthPage() {
 
   return (
     <>
+      {/* Email verification modal */}
+      {showVerify && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1100, padding:16 }}>
+          <div style={{ background:'#fff', borderRadius:'var(--r-xl)', padding:32, maxWidth:400, width:'100%', boxShadow:'var(--shadow-xl)' }}>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700, color:'var(--text-primary)', marginBottom:6 }}>Verify your email</h2>
+            <p style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:16, lineHeight:1.6 }}>We sent a 6-digit code to <strong>{verifyEmail}</strong>. It is valid for 10 minutes. Check your spam folder too.</p>
+            {verifyErr && <div style={{ padding:'10px 14px', borderRadius:'var(--r-md)', background:'#FEF2F2', border:'1px solid #FECACA', color:'#991B1B', fontSize:13, marginBottom:12 }}>{verifyErr}</div>}
+            {verifyMsg && <div style={{ padding:'10px 14px', borderRadius:'var(--r-md)', background:'#ECFDF5', border:'1px solid #A7F3D0', color:'#065F46', fontSize:13, marginBottom:12 }}>{verifyMsg}</div>}
+            <input inputMode="numeric" maxLength={6} value={verifyCode} onChange={e => setVerifyCode(e.target.value.replace(/\D/g,''))} placeholder="6-digit code"
+              onKeyDown={e => e.key==='Enter' && handleVerify()}
+              style={{ width:'100%', padding:'12px 14px', borderRadius:'var(--r-md)', border:'1.5px solid var(--border)', fontSize:20, letterSpacing:6, textAlign:'center', outline:'none', boxSizing:'border-box' as any, marginBottom:14 }}/>
+            <button onClick={handleVerify} disabled={verifyBusy} style={{ width:'100%', padding:'12px', borderRadius:'var(--r-md)', border:'none', background: verifyBusy?'var(--border)':'var(--primary)', color: verifyBusy?'var(--text-muted)':'#fff', fontSize:14, fontWeight:700, cursor: verifyBusy?'not-allowed':'pointer', marginBottom:10 }}>
+              {verifyBusy ? 'Verifying...' : 'Verify email'}
+            </button>
+            <div style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
+              <span onClick={handleResend} style={{ color:'var(--primary)', cursor:'pointer', fontWeight:500 }}>Resend code</span>
+              <span onClick={() => setShowVerify(false)} style={{ color:'var(--text-muted)', cursor:'pointer' }}>Close</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Forgot password modal */}
       {showForgot && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
@@ -309,7 +367,7 @@ export default function AuthPage() {
         </div>
 
         {/* Right panel */}
-        <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', padding:'48px 56px', background:'#fff', overflowY:'auto' }}>
+        <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', padding:'48px 56px 110px', background:'#fff', overflowY:'auto' }}>
           <div style={{ maxWidth:400, width:'100%', margin:'0 auto' }}>
             {/* Tabs */}
             <div style={{ display:'flex', gap:6, marginBottom:28 }}>
@@ -357,8 +415,9 @@ export default function AuthPage() {
                   <Field label="Full name" placeholder="Your full name" value={pName} onChange={setPName} />
                   <Field label="Email address" type="email" placeholder="you@example.com" value={pEmail} onChange={setPEmail} />
                   <Field label="Phone number" placeholder="+91 98765 43210" value={pPhone} onChange={setPPhone} />
-                  <Field label="Password" type="password" placeholder="Minimum 8 characters" value={pPassword} onChange={setPPassword} />
+                  <Field label="Password" type="password" placeholder="e.g. Test@12345" value={pPassword} onChange={setPPassword} />
                   <Field label="Confirm password" type="password" placeholder="Repeat your password" value={pConfirm} onChange={setPConfirm} />
+                  <p style={{ fontSize:12, color:'var(--text-muted)', margin:'-6px 0 14px', lineHeight:1.5 }}>{PW_HINT}</p>
                   <SubmitBtn loading={loading} label="Create patient account" />
                 </form>
               </>
@@ -379,8 +438,9 @@ export default function AuthPage() {
                       {SPECIALTIES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
                   </div>
-                  <Field label="Password" type="password" placeholder="Minimum 8 characters" value={dPassword} onChange={setDPassword} />
+                  <Field label="Password" type="password" placeholder="e.g. Test@12345" value={dPassword} onChange={setDPassword} />
                   <Field label="Confirm password" type="password" placeholder="Repeat your password" value={dConfirm} onChange={setDConfirm} />
+                  <p style={{ fontSize:12, color:'var(--text-muted)', margin:'-6px 0 14px', lineHeight:1.5 }}>{PW_HINT}</p>
                   <SubmitBtn loading={loading} label="Create doctor account" />
                 </form>
               </>
@@ -395,9 +455,10 @@ export default function AuthPage() {
                 <Field label="Full Name *" placeholder="As per Aadhaar" value={pName} onChange={setPName} />
                 <Field label="Email *" type="email" placeholder="your@email.com" value={email} onChange={setEmail} />
                 <Field label="Mobile *" placeholder="+91 XXXXX XXXXX" value={pPhone} onChange={setPPhone} />
-                <Field label="Password *" type="password" placeholder="Minimum 8 characters" value={password} onChange={setPassword} />
+                <Field label="Password *" type="password" placeholder="e.g. Test@12345" value={password} onChange={setPassword} />
                 <Field label="Confirm Password *" type="password" placeholder="Repeat password" value={confirmPassword} onChange={setConfirmPassword} />
-                <button onClick={async () => { if (!pName||!email||!password||!pPhone){setError('Fill all fields');return;} if(password!==confirmPassword){setError('Passwords do not match');return;} setLoading(true);setError(''); try{ await api.post('/auth/register',{full_name:pName,email,phone:pPhone,password,role:'agent'}); setRegSuccess('Agent account created! Please sign in.'); setMode('login');setEmail(email); }catch(err:any){setError(err.response?.data?.error?.message||'Failed');} finally{setLoading(false);} }} disabled={loading} style={{ width:'100%', padding:'13px', borderRadius:'var(--r-md)', border:'none', background:loading?'var(--border)':'#D97706', color:loading?'var(--text-muted)':'#fff', fontSize:15, fontWeight:700, cursor:loading?'not-allowed':'pointer', marginTop:8 }}>
+                <p style={{ fontSize:12, color:'var(--text-muted)', margin:'-6px 0 14px', lineHeight:1.5 }}>{PW_HINT}</p>
+                <button onClick={async () => { if (!pName||!email||!password||!pPhone){setError('Fill all fields');return;} if(password!==confirmPassword){setError('Passwords do not match');return;} if(!PW_RULE.test(password)){setError(PW_HINT);return;} setLoading(true);setError(''); try{ await api.post('/auth/register',{full_name:pName,email,phone:pPhone,password,role:'agent'}); setRegSuccess('Agent account created! Enter the code we emailed you.'); openVerify(email); setMode('login');setEmail(email); }catch(err:any){setError(err.response?.data?.error?.message||'Failed');} finally{setLoading(false);} }} disabled={loading} style={{ width:'100%', padding:'13px', borderRadius:'var(--r-md)', border:'none', background:loading?'var(--border)':'#D97706', color:loading?'var(--text-muted)':'#fff', fontSize:15, fontWeight:700, cursor:loading?'not-allowed':'pointer', marginTop:8 }}>
                   {loading ? 'Creating...' : 'Register as Agent →'}
                 </button>
               </>
@@ -412,13 +473,23 @@ export default function AuthPage() {
           { label:'Privacy Policy', slug:'privacy' },
           { label:'Refund Policy', slug:'refund-policy' },
           { label:'Medical Disclaimer', slug:'medical-disclaimer' },
+          { label:'Child Safety', slug:'child-safety' },
+          { label:'Account Termination', slug:'account-termination' },
+          { label:'Data Retention', slug:'data-retention' },
+          { label:'Account Deletion', slug:'account-deletion' },
+          { label:'Acceptable Use', slug:'acceptable-use' },
+          { label:'Grievance Officer', slug:'grievance' },
           { label:'Contact Us', slug:'contact' },
+          { label:'All Policies', slug:'legal' },
         ].map(link => (
-          <a key={link.slug} href={`https://deemona-doctors-web.onrender.com/legal/${link.slug}`} target="_blank" rel="noreferrer"
+          <a key={link.slug} href={`/${link.slug}.html`} target="_blank" rel="noreferrer"
             style={{ fontSize:12, color:'var(--text-muted)', textDecoration:'none', cursor:'pointer' }}>
             {link.label}
           </a>
         ))}
+        <span style={{ width:'100%', textAlign:'center', fontSize:11, color:'var(--text-muted)' }}>
+          © Deemona Global Solutions, New Delhi - 110075 · Grievance Officer: Abhishek · 9654135922
+        </span>
       </div>
     </>
   );

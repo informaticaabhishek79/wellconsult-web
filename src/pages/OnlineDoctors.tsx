@@ -30,7 +30,7 @@ export default function OnlineDoctors({ onBook }: { onBook: (doctorId: string) =
   useEffect(() => {
     const token = TokenStorage.get('access_token');
     const s = io('https://doctors.deemona.com', {
-      auth: { token }, transports: ['websocket', 'polling'],
+      auth: { token }, path: '/api/socket.io', transports: ['polling'],
     });
     setSocket(s);
 

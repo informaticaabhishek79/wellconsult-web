@@ -42,7 +42,7 @@ export default function ChatPage({ appointmentId, doctorName, onClose }: {
 
     const s = io(SOCKET_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      path: '/api/socket.io', transports: ['polling'],
     });
 
     s.on('connect', () => {
